@@ -1,0 +1,138 @@
+/* Estilos generales */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    flex: 1;
+}
+
+/* Estilos para cards de vehiculos */
+.vehicle-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.vehicle-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.vehicle-card img {
+    height: 200px;
+    object-fit: cover;
+}
+
+/* Estilos para detalles de vehiculo */
+.vehicle-detail-img {
+    max-height: 400px;
+    object-fit: cover;
+}
+
+/* Estilos para formularios */
+.form-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Estilos para la pagina de inicio */
+.jumbotron {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/static/images/hero-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    color: white;
+    padding: 100px 0;
+    margin-bottom: 30px;
+}
+
+/* Estilos para la barra de navegacion */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Cambio navbar-dark bg-primary a bg-success */
+.navbar.navbar-dark.bg-primary {
+    background-color: #198754 !important;
+}
+
+/* Estilos para el footer */
+footer {
+    margin-top: auto;
+}
+
+/* Estilos para las tarjetas de caracteristicas */
+.feature-card {
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Estilos para los botones - Cambio de azul a verde */
+.btn-primary {
+    background-color: #198754 !important;
+    border-color: #198754 !important;
+}
+
+.btn-primary:hover {
+    background-color: #157347 !important;
+    border-color: #146c43 !important;
+}
+
+/* Estilos para iconos - Cambio de texto primario a texto verde */
+.text-primary {
+    color: #198754 !important;
+}
+
+/* Estilos para elementos de fondo primario */
+.bg-primary {
+    background-color: #198754 !important;
+}
+
+/* Estilos para las alertas */
+.alert {
+    border-radius: 0;
+    margin-bottom: 20px;
+}
+
+/* Estilos para la paginacion */
+.pagination {
+    justify-content: center;
+    margin-top: 30px;
+}
+
+/* Estilos para los formularios de busqueda */
+.search-form {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 30px;
+}
+
+/* Estilos para las tarjetas de reserva */
+.reservation-card {
+    margin-bottom: 20px;
+}
+
+.reservation-card .badge {
+    font-size: 0.8rem;
+}
+
+/* Estilos para dispositivos moviles */
+@media (max-width: 768px) {
+    .jumbotron {
+        padding: 50px 0;
+    }
+    
+    .vehicle-card img {
+        height: 150px;
+    }
+    
+    .vehicle-detail-img {
+        max-height: 300px;
+    }
+}

@@ -1,0 +1,35 @@
+<footer class="bg-dark text-white py-4 mt-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <h5>Alquileres Maria</h5>
+                <p>Tu mejor opcion para alquilar vehiculos de calidad a precios competitivos.</p>
+            </div>
+            <div class="col-md-4">
+                <h5>Enlaces Rapidos</h5>
+                <ul class="list-unstyled">
+                    <li><a href="{% url 'home' %}" class="text-white">Inicio</a></li>
+                    <li><a href="{% url 'vehiculos:lista' %}" class="text-white">Vehiculos</a></li>
+                    {% if user.is_authenticated %}
+                    <li><a href="{% url 'reservas:lista' %}" class="text-white">Mis Reservas</a></li>
+                    {% else %}
+                    <li><a href="{% url 'usuarios:login' %}" class="text-white">Iniciar Sesion</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h5>Contacto</h5>
+                <address>
+                    <i class="fas fa-map-marker-alt"></i> Av. Siempreviva 742<br>
+                    <i class="fas fa-phone"></i> (123) 456-7890<br>
+                    <i class="fas fa-envelope"></i> info@alquileres-maria.com
+                </address>
+            </div>
+        </div>
+        <hr>
+        <div class="text-center">
+            <p>&copy; {% now "Y" %} Alquileres Maria. Todos los derechos reservados.</p>
+            <p class="small">Desarrollado como trabajo practico universitario</p>
+        </div>
+    </div>
+</footer>
