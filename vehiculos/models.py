@@ -21,6 +21,18 @@ class Marca(models.Model):
         verbose_name = "Marca"
         verbose_name_plural = "Marcas"
 
+class PoliticaReembolso(models.Model):
+    nombre = models.CharField(max_length=50)  # Ejemplo: "100%", "20%", "Sin reembolso"
+    porcentaje = models.PositiveIntegerField(help_text="Porcentaje de reembolso (0-100)")
+    descripcion = models.TextField(blank=True, null=True)
+    
+    class Meta:
+        verbose_name = 'Política de Reembolso'
+        verbose_name_plural = 'Políticas de Reembolso'
+    
+    def __str__(self):
+        return f"{self.nombre} ({self.porcentaje}%)"
+
 class Vehiculo(models.Model):
     marca = models.ForeignKey(Marca, on_delete=models.CASCADE)
     modelo = models.CharField(max_length=100)
@@ -28,12 +40,12 @@ class Vehiculo(models.Model):
     ano = models.PositiveIntegerField()
     patente = models.CharField(max_length=10, unique=True)
     capacidad = models.PositiveIntegerField(help_text="Numero de pasajeros")
-    tarifa_diaria = models.DecimalField(max_digits=10, decimal_places=2)
+    precio_por_dia = models.DecimalField(max_digits=10, decimal_places=2)
+    kilometraje = models.PositiveIntegerField(help_text='Kilometraje actual del vehículo', default=0)
     descripcion = models.TextField(blank=True, null=True)
+    politica_reembolso = models.ForeignKey(PoliticaReembolso, on_delete=models.SET_NULL, null=True, blank=True)
     imagen = models.ImageField(upload_to='vehiculos/', blank=True, null=True)
     disponible = models.BooleanField(default=True)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
-    fecha_actualizacion = models.DateTimeField(auto_now=True)
     
     def __str__(self):
         return f"{self.marca} {self.modelo} ({self.ano}) - {self.patente}"

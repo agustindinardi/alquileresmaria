@@ -5,10 +5,10 @@ from django.dispatch import receiver
 
 class Perfil(models.Model):
     usuario = models.OneToOneField(User, on_delete=models.CASCADE)
-    telefono = models.CharField(max_length=20, blank=True, null=True)
-    direccion = models.CharField(max_length=255, blank=True, null=True)
-    ciudad = models.CharField(max_length=100, blank=True, null=True)
-    pais = models.CharField(max_length=100, blank=True, null=True)
+    nombre = models.CharField(max_length=20, blank=True, null=True)
+    apellido = models.CharField(max_length=20, blank=True, null=True)
+    DNI = models.CharField(max_length=100, blank=True, null=True)
+    mail = models.CharField(max_length=100, blank=True, null=True)
     fecha_nacimiento = models.DateField(blank=True, null=True)
     
     def __str__(self):

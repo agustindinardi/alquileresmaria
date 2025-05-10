@@ -1,4 +1,4 @@
-# script_datos_iniciales.py
+# manage.py
 import os
 import django
 
@@ -6,7 +6,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'alquileres_maria.settings')
 django.setup()
 
 from django.contrib.auth.models import User
-from vehiculos.models import TipoVehiculo, Marca, Vehiculo
+from vehiculos.models import PoliticaReembolso, TipoVehiculo, Marca, Vehiculo
 from reservas.models import EstadoReserva
 from pagos.models import MetodoPago
 from decimal import Decimal
@@ -15,24 +15,24 @@ from decimal import Decimal
 import os
 import sys
 
-# def main():
-#     """Run administrative tasks."""
-#     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'alquileres_maria.settings')
-#     try:
-#         from django.core.management import execute_from_command_line
-#     except ImportError as exc:
-#         raise ImportError(
-#             "Couldn't import Django. Are you sure it's installed and "
-#             "available on your PYTHONPATH environment variable? Did you "
-#             "forget to activate a virtual environment?"
-#         ) from exc
-#     execute_from_command_line(sys.argv)
+# Crear políticas de reembolso
+politicas_reembolso = [
+    {'nombre': 'Reembolso Completo', 'porcentaje': 100, 'descripcion': 'Devolución del 100% del importe pagado.'},
+    {'nombre': 'Reembolso Parcial', 'porcentaje': 20, 'descripcion': 'Devolución del 20% del importe pagado.'},
+    {'nombre': 'Sin Reembolso', 'porcentaje': 0, 'descripcion': 'No se realiza ningún reembolso.'}
+]
 
-# if __name__ == '__main__':
-#     main()
+for politica in politicas_reembolso:
+    PoliticaReembolso.objects.get_or_create(
+        nombre=politica['nombre'],
+        defaults={
+            'porcentaje': politica['porcentaje'],
+            'descripcion': politica['descripcion']
+        }
+    )
+print("Políticas de reembolso creadas")
 
-
-#Crear estados de reserva
+# Crear estados de reserva
 estados_reserva = ['Pendiente', 'Confirmada', 'Cancelada', 'Cancelada por Admin', 'Completada']
 for estado in estados_reserva:
     EstadoReserva.objects.get_or_create(nombre=estado)
@@ -63,7 +63,7 @@ if not User.objects.filter(username='admin').exists():
     user.save()
     print("Superusuario creado")
 
-#Crear algunos vehiculos de ejemplo
+# Crear algunos vehiculos de ejemplo
 vehiculos = [
     {
         'marca': 'Toyota',
@@ -72,7 +72,9 @@ vehiculos = [
         'ano': 2022,
         'patente': 'ABC123',
         'capacidad': 5,
-        'tarifa_diaria': Decimal('50.00'),
+        'precio_por_dia': Decimal('50.00'),  # Actualizado nombre del campo
+        'kilometraje': 15000,  # Añadido nuevo campo
+        'politica_reembolso': 'Reembolso Completo',  # Añadido nuevo campo
         'descripcion': 'Toyota Corolla en excelente estado. Ideal para viajes familiares.'
     },
     {
@@ -82,7 +84,9 @@ vehiculos = [
         'ano': 2021,
         'patente': 'DEF456',
         'capacidad': 5,
-        'tarifa_diaria': Decimal('60.00'),
+        'precio_por_dia': Decimal('60.00'),  # Actualizado nombre del campo
+        'kilometraje': 25000,  # Añadido nuevo campo
+        'politica_reembolso': 'Reembolso Parcial',  # Añadido nuevo campo
         'descripcion': 'Ford EcoSport con todas las comodidades. Perfecta para ciudad y ruta.'
     },
     {
@@ -92,7 +96,9 @@ vehiculos = [
         'ano': 2020,
         'patente': 'GHI789',
         'capacidad': 5,
-        'tarifa_diaria': Decimal('70.00'),
+        'precio_por_dia': Decimal('70.00'),  # Actualizado nombre del campo
+        'kilometraje': 35000,  # Añadido nuevo campo
+        'politica_reembolso': 'Sin Reembolso',  # Añadido nuevo campo
         'descripcion': 'Chevrolet S10 4x4. Ideal para terrenos dificiles y carga.'
     }
 ]
@@ -100,6 +106,7 @@ vehiculos = [
 for v in vehiculos:
     marca = Marca.objects.get(nombre=v['marca'])
     tipo = TipoVehiculo.objects.get(nombre=v['tipo'])
+    politica = PoliticaReembolso.objects.get(nombre=v['politica_reembolso'])
     
     Vehiculo.objects.get_or_create(
         patente=v['patente'],
@@ -109,7 +116,9 @@ for v in vehiculos:
             'tipo': tipo,
             'ano': v['ano'],
             'capacidad': v['capacidad'],
-            'tarifa_diaria': v['tarifa_diaria'],
+            'precio_por_dia': v['precio_por_dia'],  # Actualizado nombre del campo
+            'kilometraje': v['kilometraje'],  # Añadido nuevo campo
+            'politica_reembolso': politica,  # Añadido nuevo campo
             'descripcion': v['descripcion'],
             'disponible': True
         }
