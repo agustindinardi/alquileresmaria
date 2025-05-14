@@ -5,12 +5,10 @@ from django.dispatch import receiver
 
 class Perfil(models.Model):
     usuario = models.OneToOneField(User, on_delete=models.CASCADE)
-    nombre = models.CharField(max_length=20, blank=True, null=True)
-    apellido = models.CharField(max_length=20, blank=True, null=True)
-    DNI = models.CharField(max_length=100, blank=True, null=True)
-    mail = models.CharField(max_length=100, blank=True, null=True)
+    # Django ya incluye campos de nombre, apellido, email, etc. en el modelo User
+    # Agregamos campos adicionales al perfil
+    dni = models.CharField(max_length=100, blank=True, null=True)
     fecha_nacimiento = models.DateField(blank=True, null=True)
-    contrasenia = models.CharField(max_length=100, blank=True, null=True)
     telefono = models.CharField(max_length=100, blank=True, null=True)
     
     def __str__(self):
@@ -19,14 +17,3 @@ class Perfil(models.Model):
     class Meta:
         verbose_name = "Perfil"
         verbose_name_plural = "Perfiles"
-
-@receiver(post_save, sender=User)
-def crear_perfil_usuario(sender, instance, created, **kwargs):
-    """Crea un perfil para cada usuario nuevo"""
-    if created:
-        Perfil.objects.create(usuario=instance)
-
-@receiver(post_save, sender=User)
-def guardar_perfil_usuario(sender, instance, **kwargs):
-    """Guarda el perfil cuando se guarda el usuario"""
-    instance.perfil.save()
