@@ -71,6 +71,7 @@ from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 
 from .models import Vehiculo, Marca, TipoVehiculo, PoliticaReembolso
@@ -174,3 +175,10 @@ class VehiculoDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         vehiculo = self.get_object()
         messages.success(request, f'El vehículo {vehiculo.marca} {vehiculo.modelo} ha sido eliminado.')
         return super().delete(request, *args, **kwargs)
+    
+
+
+#Probando mostrar algo en la pagina vehiculos/
+def mostrarVehiculos(request):
+    vehiculos = Vehiculo.objects.all()
+    return render(request, 'vehiculosIndex.html', {'vehiculos': vehiculos})

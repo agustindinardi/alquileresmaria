@@ -15,6 +15,7 @@ app_name = 'vehiculos'
 
 urlpatterns = [
     # Listado de vehículos
+    path('', views.mostrarVehiculos),
     path('', views.VehiculoListView.as_view(), name='lista'),
     
     # Detalles de un vehículo específico
