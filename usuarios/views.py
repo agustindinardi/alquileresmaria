@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from .forms import RegistroUsuarioForm, EmailLoginForm
 from .forms import UserForm, PerfilForm
 from django.contrib.auth.views import LoginView, LogoutView
 
@@ -23,17 +24,30 @@ def registro(request):
         
     return render(request, 'usuarios/registro.html', {'user_form': user_form, 'perfil_form': perfil_form})
 
-class CustomLoginView(LoginView):
-    template_name = 'usuarios/login.html'
-    
-    def get_success_url(self):
-        messages.success(self.request, f"¡Bienvenido/a de nuevo, {self.request.user.username}!")
-        return super().get_success_url()
+def iniciar_sesion(request):
+    if request.method == 'POST':
+        form = EmailLoginForm(request, data=request.POST)
+        if form.is_valid():
+            email = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(request, username=email, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, f"¡Bienvenido/a, {user.username}!")
+                return redirect('home')
+            else:
+                messages.error(request, "Correo o contraseña incorrectos.")
+        else:
+            messages.error(request, "Formulario no válido.")
+    else:
+        form = EmailLoginForm()
+    return render(request, 'usuarios/login.html', {'form': form})
 
-class CustomLogoutView(LogoutView):
-    def dispatch(self, request, *args, **kwargs):
-        messages.success(request, "Has cerrado sesion exitosamente.")
-        return super().dispatch(request, *args, **kwargs)
+def cerrar_sesion(request):
+    logout(request)
+    messages.success(request, "Sesión cerrada exitosamente.")
+    return redirect('home')
+
 
 @login_required
 def perfil(request):

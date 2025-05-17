@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .models import Perfil
 from django.contrib.auth.forms import UserCreationForm
 from datetime import date
@@ -13,9 +14,10 @@ class UserForm(UserCreationForm):
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if User.objects.filter(email=email).exists():
-            raise forms.ValidationError("Este correo electrónico ya está registrado.")
+            raise forms.ValidationError("Este correo electronico ya esta registrado.")
         return email
     
+
     def clean_password1(self):
         password = self.cleaned_data.get('password1')
         if len(password) > 8:
@@ -37,3 +39,7 @@ class PerfilForm(forms.ModelForm):
         if edad < 18:
             raise forms.ValidationError("Debes ser mayor de 18 años para registrarte.")
         return fecha_nacimiento
+      
+#Formulario para loguearse
+class EmailLoginForm(AuthenticationForm):
+    username = forms.EmailField(label="Correo electrónico")
