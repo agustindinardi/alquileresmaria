@@ -110,3 +110,9 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
 LOGIN_URL = 'login'
+
+# Backend predeterminado para el login después de registro
+AUTHENTICATION_BACKENDS = [
+    'usuarios.backends.EmailBackend',              # Para iniciar sesión con correo electrónico
+    'django.contrib.auth.backends.ModelBackend',  # Para iniciar sesión con nombre de usuario
+]

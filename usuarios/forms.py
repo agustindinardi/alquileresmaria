@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 
 class RegistroUsuarioForm(UserCreationForm):
     email = forms.EmailField(required=True)
@@ -21,3 +21,6 @@ class RegistroUsuarioForm(UserCreationForm):
         if User.objects.filter(email=email).exists():
             raise forms.ValidationError("Este correo electronico ya esta registrado.")
         return email
+    
+class EmailLoginForm(AuthenticationForm):
+    username = forms.EmailField(label="Correo electrónico")
