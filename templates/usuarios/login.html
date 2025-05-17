@@ -1,17 +1,63 @@
 {% extends 'base.html' %}
 
+{% block title %}Iniciar Sesión - Sistema de Alquiler de Autos{% endblock %}
+
 {% block content %}
-    <h2>Iniciar Sesión</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Iniciar Sesión</button>
-    </form>
-    {% if messages %}
-        <ul>
-            {% for message in messages %}
-                <li>{{ message }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-center">Iniciar Sesión</h2>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">Email</label>
+                        {% if form.username.errors %}
+                            <div class="alert alert-danger">
+                                {{ form.username.errors }}
+                            </div>
+                        {% endif %}
+                        <input type="email" name="{{ form.username.html_name }}" 
+                               id="{{ form.username.id_for_label }}" 
+                               class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                               value="{{ form.username.value|default:'' }}"
+                               required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.password.id_for_label }}" class="form-label">Contraseña</label>
+                        {% if form.password.errors %}
+                            <div class="alert alert-danger">
+                                {{ form.password.errors }}
+                            </div>
+                        {% endif %}
+                        <input type="password" name="{{ form.password.html_name }}" 
+                               id="{{ form.password.id_for_label }}" 
+                               class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+                               required>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
+                    </div>
+                </form>
+                
+                <div class="mt-3 text-center">
+                    <p>¿No tienes una cuenta? <a href="{% url 'usuarios:registro' %}">Registrarse</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
