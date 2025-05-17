@@ -6,7 +6,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'alquileres_maria.settings')
 django.setup()
 
 from django.contrib.auth.models import User
-from vehiculos.models import PoliticaReembolso, TipoVehiculo, Marca, Vehiculo
+from vehiculos.models import PoliticaReembolso, TipoVehiculo, Marca, Vehiculo, Sucursal
 from reservas.models import EstadoReserva
 from pagos.models import MetodoPago
 from decimal import Decimal
@@ -15,6 +15,22 @@ from decimal import Decimal
 import os
 import sys
 
+def main():
+    """Run administrative tasks."""
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'alquileres_maria.settings')
+    try:
+        from django.core.management import execute_from_command_line
+    except ImportError as exc:
+        raise ImportError(
+            "Couldn't import Django. Are you sure it's installed and "
+            "available on your PYTHONPATH environment variable? Did you "
+            "forget to activate a virtual environment?"
+        ) from exc
+    execute_from_command_line(sys.argv)
+
+if __name__ == '__main__':
+    main()
+    
 # Crear políticas de reembolso
 politicas_reembolso = [
     {'nombre': 'Reembolso Completo', 'porcentaje': 100, 'descripcion': 'Devolución del 100% del importe pagado.'},
@@ -31,6 +47,23 @@ for politica in politicas_reembolso:
         }
     )
 print("Políticas de reembolso creadas")
+
+# Crear sucursales
+sucursales_data = [
+    {'nombre': 'Sucursal Central', 'direccion': 'Av. 7 1234', 'ciudad': 'La Plata'},
+    {'nombre': 'Sucursal Norte', 'direccion': 'Calle 60 456', 'ciudad': 'La Plata'},
+    {'nombre': 'Sucursal Sur', 'direccion': 'Calle 137 789', 'ciudad': 'Berisso'}
+]
+
+for data in sucursales_data:
+    Sucursal.objects.get_or_create(
+        nombre=data['nombre'],
+        defaults={
+            'direccion': data['direccion'],
+            'ciudad': data['ciudad']
+        }
+    )
+print("Sucursales creadas")
 
 # Crear estados de reserva
 estados_reserva = ['Pendiente', 'Confirmada', 'Cancelada', 'Cancelada por Admin', 'Completada']
@@ -75,7 +108,8 @@ vehiculos = [
         'precio_por_dia': Decimal('50.00'),  # Actualizado nombre del campo
         'kilometraje': 15000,  # Añadido nuevo campo
         'politica_reembolso': 'Reembolso Completo',  # Añadido nuevo campo
-        'descripcion': 'Toyota Corolla en excelente estado. Ideal para viajes familiares.'
+        'descripcion': 'Toyota Corolla en excelente estado. Ideal para viajes familiares.',
+        'sucursal': 'La Plata'
     },
     {
         'marca': 'Ford',
@@ -87,7 +121,8 @@ vehiculos = [
         'precio_por_dia': Decimal('60.00'),  # Actualizado nombre del campo
         'kilometraje': 25000,  # Añadido nuevo campo
         'politica_reembolso': 'Reembolso Parcial',  # Añadido nuevo campo
-        'descripcion': 'Ford EcoSport con todas las comodidades. Perfecta para ciudad y ruta.'
+        'descripcion': 'Ford EcoSport con todas las comodidades. Perfecta para ciudad y ruta.',
+        'sucursal': 'La Plata'
     },
     {
         'marca': 'Chevrolet',
@@ -99,14 +134,17 @@ vehiculos = [
         'precio_por_dia': Decimal('70.00'),  # Actualizado nombre del campo
         'kilometraje': 35000,  # Añadido nuevo campo
         'politica_reembolso': 'Sin Reembolso',  # Añadido nuevo campo
-        'descripcion': 'Chevrolet S10 4x4. Ideal para terrenos dificiles y carga.'
+        'descripcion': 'Chevrolet S10 4x4. Ideal para terrenos dificiles y carga.',
+        'sucursal': 'La Plata'
     }
 ]
+
 
 for v in vehiculos:
     marca = Marca.objects.get(nombre=v['marca'])
     tipo = TipoVehiculo.objects.get(nombre=v['tipo'])
     politica = PoliticaReembolso.objects.get(nombre=v['politica_reembolso'])
+    sucursal = Sucursal.objects.get(nombre='Sucursal Central')  # Usada para todos los vehículos
     
     Vehiculo.objects.get_or_create(
         patente=v['patente'],
@@ -116,29 +154,14 @@ for v in vehiculos:
             'tipo': tipo,
             'ano': v['ano'],
             'capacidad': v['capacidad'],
-            'precio_por_dia': v['precio_por_dia'],  # Actualizado nombre del campo
-            'kilometraje': v['kilometraje'],  # Añadido nuevo campo
-            'politica_reembolso': politica,  # Añadido nuevo campo
+            'precio_por_dia': v['precio_por_dia'],
+            'kilometraje': v['kilometraje'],
+            'politica_reembolso': politica,
             'descripcion': v['descripcion'],
-            'disponible': True
+            'disponible': True,
+            'sucursal': sucursal  # Aquí se asigna la sucursal
         }
     )
 print("Vehiculos de ejemplo creados")
 
 print("Datos iniciales creados exitosamente")
-
-def main():
-    """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'alquileres_maria.settings')
-    try:
-        from django.core.management import execute_from_command_line
-    except ImportError as exc:
-        raise ImportError(
-            "Couldn't import Django. Are you sure it's installed and "
-            "available on your PYTHONPATH environment variable? Did you "
-            "forget to activate a virtual environment?"
-        ) from exc
-    execute_from_command_line(sys.argv)
-
-if __name__ == '__main__':
-    main()
