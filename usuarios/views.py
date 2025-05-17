@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .forms import RegistroUsuarioForm, EmailLoginForm
+from .forms import  EmailLoginForm
 from .forms import UserForm, PerfilForm
 from django.contrib.auth.views import LoginView, LogoutView
 
@@ -15,8 +15,7 @@ def registro(request):
             perfil = perfil_form.save(commit=False)
             perfil.usuario = user   # Asignar el usuario al perfil
             perfil.save()
-            login(request, user)
-            messages.success(request, f"¡Cuenta creada exitosamente! Bienvenido/a, {user.username}.")
+            messages.success(request, f"¡Cuenta creada exitosamente! Bienvenido/a, {user.username}. Utiliza tus credenciales para autenticarte")
             return redirect('home')
     else:
         user_form = UserForm()
