@@ -3,23 +3,26 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .forms import RegistroUsuarioForm, EmailLoginForm
+from .forms import UserForm, PerfilForm
+from django.contrib.auth.views import LoginView, LogoutView
 
 def registro(request):
     if request.method == 'POST':
-        form = RegistroUsuarioForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            # Autenticar y loguear al usuario
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password1')
-            user = authenticate(username=username, password=password)
+        user_form = UserForm(request.POST)
+        perfil_form = PerfilForm(request.POST)
+        if user_form.is_valid() and perfil_form.is_valid():
+            user = user_form.save()
+            perfil = perfil_form.save(commit=False)
+            perfil.usuario = user   # Asignar el usuario al perfil
+            perfil.save()
             login(request, user)
-            messages.success(request, f"¡Cuenta creada exitosamente! Bienvenido/a, {username}.")
+            messages.success(request, f"¡Cuenta creada exitosamente! Bienvenido/a, {user.username}.")
             return redirect('home')
     else:
-        form = RegistroUsuarioForm()
-    
-    return render(request, 'usuarios/registro.html', {'form': form})
+        user_form = UserForm()
+        perfil_form = PerfilForm()
+        
+    return render(request, 'usuarios/registro.html', {'user_form': user_form, 'perfil_form': perfil_form})
 
 def iniciar_sesion(request):
     if request.method == 'POST':
