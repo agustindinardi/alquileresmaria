@@ -43,3 +43,14 @@ class PerfilForm(forms.ModelForm):
 #Formulario para loguearse
 class EmailLoginForm(AuthenticationForm):
     username = forms.EmailField(label="Correo electrónico")
+
+#Formulario para recuperar contraseña
+class RecuperarContrasenaForm(forms.Form):
+    email = forms.EmailField(
+        label="Correo Electrónico",
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ingresa tu correo',
+            'required': 'required'
+        })
+    )

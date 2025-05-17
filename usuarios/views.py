@@ -1,10 +1,13 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth import login, authenticate, logout, get_user_model
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .forms import  EmailLoginForm
-from .forms import UserForm, PerfilForm
+from .forms import UserForm, PerfilForm, RecuperarContrasenaForm
 from django.contrib.auth.views import LoginView, LogoutView
+from django.core.mail import send_mail
+from django.utils.crypto import get_random_string
+from django.conf import settings
 
 def registro(request):
     if request.method == 'POST':
@@ -51,3 +54,37 @@ def cerrar_sesion(request):
 @login_required
 def perfil(request):
     return render(request, 'usuarios/perfil.html')
+
+#Vista para recuperar contraseña
+User = get_user_model()
+
+def recuperar_contrasena(request):
+    if request.method == 'POST':
+        form = RecuperarContrasenaForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            try:
+                user = User.objects.get(email=email)
+                # Generar una contraseña aleatoria de 8 caracteres
+                nueva_contrasena = get_random_string(length=8)
+                user.set_password(nueva_contrasena)
+                user.save()
+
+                # Enviar el correo electrónico con la nueva contraseña
+                send_mail(
+                    'Recuperación de contraseña - Alquileres María',
+                    f'Hola {user.username}, tu nueva contraseña es: {nueva_contrasena}',
+                    settings.DEFAULT_FROM_EMAIL,
+                    [email],
+                    fail_silently=False,
+                )
+
+                messages.success(request, 'Se ha enviado una nueva contraseña a tu correo.')
+                return redirect('usuarios:login')
+            except User.DoesNotExist:
+                messages.error(request, 'No se encontró ninguna cuenta con ese correo.',extra_tags='danger')
+                return redirect('usuarios:recuperar_contrasena')
+    else:
+        form = RecuperarContrasenaForm()
+
+    return render(request, 'usuarios/recuperar_contrasena.html', {'form': form})
