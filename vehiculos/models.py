@@ -33,6 +33,18 @@ class PoliticaReembolso(models.Model):
     def __str__(self):
         return f"{self.nombre} ({self.porcentaje}%)"
 
+class Sucursal(models.Model):
+    nombre = models.CharField(max_length=100)
+    direccion = models.CharField(max_length=255)
+    ciudad = models.CharField(max_length=20, blank=True, null=True)
+    
+    def __str__(self):
+        return self.nombre
+    
+    class Meta:
+        verbose_name = "Sucursal"
+        verbose_name_plural = "Sucursales"
+
 class Vehiculo(models.Model):
     marca = models.ForeignKey(Marca, on_delete=models.CASCADE)
     modelo = models.CharField(max_length=100)
@@ -46,10 +58,11 @@ class Vehiculo(models.Model):
     politica_reembolso = models.ForeignKey(PoliticaReembolso, on_delete=models.SET_NULL, null=True, blank=True)
     imagen = models.ImageField(upload_to='vehiculos/', blank=True, null=True)
     disponible = models.BooleanField(default=True)
-    
+    sucursal = models.ForeignKey(Sucursal, on_delete=models.SET_NULL, null=True, blank=True)
+
     def __str__(self):
         return f"{self.marca} {self.modelo} ({self.ano}) - {self.patente}"
-    
+
     class Meta:
         verbose_name = "Vehiculo"
         verbose_name_plural = "Vehiculos"

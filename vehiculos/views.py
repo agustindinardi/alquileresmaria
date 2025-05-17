@@ -72,8 +72,9 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpResponseRedirect
+from django.db import IntegrityError
 
-from .models import Vehiculo, Marca, TipoVehiculo, PoliticaReembolso
+from .models import Vehiculo, Marca, TipoVehiculo, PoliticaReembolso, Sucursal
 from .forms import VehiculoForm
 
 # Función auxiliar para comprobar si el usuario es staff
@@ -86,7 +87,7 @@ class VehiculoListView(ListView):
     template_name = 'vehiculos/vehiculo_list.html'
     context_object_name = 'vehiculos'
     paginate_by = 9  # Mostrar 9 vehículos por página
-    
+
     def get_queryset(self):
         """Personalizar la consulta para filtrar los vehículos."""
         queryset = super().get_queryset()
@@ -108,13 +109,19 @@ class VehiculoListView(ListView):
         if tipo_id:
             queryset = queryset.filter(tipo_id=tipo_id)
             
+        # Filtrar por sucursal (si se especifica en la URL)
+        sucursal_id = self.request.GET.get('sucursal')
+        if sucursal_id:
+            queryset = queryset.filter(sucursal_id=sucursal_id)
+            
         return queryset
-    
+
     def get_context_data(self, **kwargs):
         """Añadir datos adicionales al contexto."""
         context = super().get_context_data(**kwargs)
         context['marcas'] = Marca.objects.all()
         context['tipos'] = TipoVehiculo.objects.all()
+        context['sucursales'] = Sucursal.objects.all()
         return context
 
 class VehiculoDetailView(DetailView):
@@ -128,47 +135,67 @@ class VehiculoCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Vehiculo
     form_class = VehiculoForm
     template_name = 'vehiculos/vehiculo_form.html'
-    success_url = reverse_lazy('vehiculo-list')
-    
+    success_url = reverse_lazy('vehiculos:lista')
+
     def test_func(self):
         """Comprobar si el usuario tiene permisos para crear vehículos."""
         return self.request.user.is_staff
-    
+
     def form_valid(self, form):
         """Procesar el formulario cuando es válido."""
-        messages.success(self.request, f'¡Vehículo creado correctamente!')
-        return super().form_valid(form)
+        try:
+            # Intenta guardar el formulario
+            response = super().form_valid(form)
+            # Si todo va bien, mostrar mensaje de éxito
+            messages.success(self.request, f'¡Vehículo {self.object.marca} {self.object.modelo} con patente {self.object.patente} creado correctamente!')
+            return response
+        except IntegrityError as e:
+            # Si hay un error de integridad (patente duplicada), mostrarlo
+            if 'unique constraint' in str(e).lower() and 'patente' in str(e).lower():
+                form.add_error('patente', f'Ya existe un vehículo con la patente {form.cleaned_data["patente"]} en el sistema.')
+            else:
+                form.add_error(None, f'Error al guardar el vehículo: {str(e)}')
+            return self.form_invalid(form)
 
 class VehiculoUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     """Vista para actualizar un vehículo existente (solo staff)."""
     model = Vehiculo
     form_class = VehiculoForm
     template_name = 'vehiculos/vehiculo_form.html'
-    
+
     def test_func(self):
         """Comprobar si el usuario tiene permisos para actualizar vehículos."""
         return self.request.user.is_staff
-    
+
     def get_success_url(self):
         """URL a la que redirigir tras actualizar con éxito."""
-        return reverse('vehiculo-detail', kwargs={'pk': self.object.pk})
-    
+        # Redirigir a la lista con filtros vacíos
+        return reverse('vehiculos:lista') + '?marca=&tipo=&sucursal=&disponible='
+
     def form_valid(self, form):
         """Procesar el formulario cuando es válido."""
-        messages.success(self.request, f'¡Vehículo actualizado correctamente!')
-        return super().form_valid(form)
+        try:
+            response = super().form_valid(form)
+            messages.success(self.request, f'¡Vehículo {self.object.marca} {self.object.modelo} actualizado correctamente!')
+            return response
+        except IntegrityError as e:
+            if 'unique constraint' in str(e).lower() and 'patente' in str(e).lower():
+                form.add_error('patente', f'Ya existe un vehículo con la patente {form.cleaned_data["patente"]} en el sistema.')
+            else:
+                form.add_error(None, f'Error al actualizar el vehículo: {str(e)}')
+            return self.form_invalid(form)
 
 class VehiculoDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     """Vista para eliminar un vehículo (solo staff)."""
     model = Vehiculo
-    template_name = 'vehiculos/vehiculo_confirm_delete.html'
-    success_url = reverse_lazy('vehiculo-list')
+    template_name = 'vehiculos/vehiculo_confirm_delete.html' 
+    success_url = reverse_lazy('vehiculos:lista')
     context_object_name = 'vehiculo'
-    
+
     def test_func(self):
         """Comprobar si el usuario tiene permisos para eliminar vehículos."""
         return self.request.user.is_staff
-    
+
     def delete(self, request, *args, **kwargs):
         """Personalizar el proceso de eliminación."""
         vehiculo = self.get_object()
