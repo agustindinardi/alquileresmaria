@@ -176,9 +176,3 @@ class VehiculoDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         messages.success(request, f'El vehículo {vehiculo.marca} {vehiculo.modelo} ha sido eliminado.')
         return super().delete(request, *args, **kwargs)
     
-
-
-#Probando mostrar algo en la pagina vehiculos/
-def mostrarVehiculos(request):
-    vehiculos = Vehiculo.objects.all()
-    return render(request, 'vehiculosIndex.html', {'vehiculos': vehiculos})
