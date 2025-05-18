@@ -18,7 +18,7 @@ urlpatterns = [
     path('', views.VehiculoListView.as_view(), name='lista'),
 
     # Detalles de un vehículo específico
-    path('vehiculo/<int:pk>/', views.VehiculoDetailView.as_view(), name='vehiculo-detail'),
+    path('vehiculo/<int:pk>/detalle/', views.VehiculoDetailView.as_view(), name='vehiculo-detail'),
 
     # Crear nuevo vehículo
     path('vehiculo/nuevo/', views.VehiculoCreateView.as_view(), name='vehiculo-create'),
