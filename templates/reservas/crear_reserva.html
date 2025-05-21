@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}Reservar {{ vehiculo.marca }} {{ vehiculo.modelo }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">Reservar Vehículo</h1>
+
+    <div class="row">
+        <!-- Datos del Vehículo -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                {% if vehiculo.imagen %}
+                <img src="{{ vehiculo.imagen.url }}" class="card-img-top" alt="{{ vehiculo }}" style="height: 300px; object-fit: cover;">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ vehiculo.marca }} {{ vehiculo.modelo }} ({{ vehiculo.ano }})</h5>
+                    <p>
+                        <span class="badge {% if vehiculo.disponible %}bg-success{% else %}bg-danger{% endif %}">
+                            {% if vehiculo.disponible %}Disponible{% else %}No disponible{% endif %}
+                        </span>
+                        <span class="badge bg-info text-dark">{{ vehiculo.tipo }}</span>
+                    </p>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><i class="fas fa-users me-2"></i>{{ vehiculo.capacidad }} pasajeros</li>
+                        <li class="list-group-item"><i class="fas fa-money-bill-wave me-2"></i>${{ vehiculo.precio_por_dia }} / día</li>
+                        {% if vehiculo.sucursal %}
+                        <li class="list-group-item"><i class="fas fa-building me-2"></i>{{ vehiculo.sucursal }}</li>
+                        {% endif %}
+                        <li class="list-group-item"><i class="fas fa-gauge me-2"></i>{{ vehiculo.kilometraje }} km</li>
+                        <li class="list-group-item"><strong>Patente:</strong> {{ vehiculo.patente }}</li>
+                        <li class="list-group-item"><strong>Reembolso:</strong> {{ vehiculo.politica_reembolso }}</li>
+                        <li class="list-group-item"><strong>Descripción:</strong>
+                            {% if vehiculo.descripcion %}
+                                {{ vehiculo.descripcion }}
+                            {% else %}
+                                <em>No hay descripción para este vehículo.</em>
+                            {% endif %}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario de Reserva -->
+        <div class="col-md-6">
+            {% if user.is_authenticated and not user.is_staff %}
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Datos de la Reserva</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for err in form.non_field_errors %}{{ err }}<br>{% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Fecha de entrega -->
+                        <div class="mb-3">
+                            <label for="id_fecha_inicio" class="form-label">Fecha de entrega</label>
+                            <input type="date" name="fecha_inicio" id="id_fecha_inicio" class="form-control" required>
+                            {% for err in form.fecha_inicio.errors %}
+                                <div class="text-danger small">{{ err }}</div>
+                            {% endfor %}
+                            <div class="form-text">Seleccione desde hoy en adelante</div>
+                        </div>
+
+                        <!-- Fecha de devolución -->
+                        <div class="mb-3">
+                            <label for="id_fecha_fin" class="form-label">Fecha de devolución</label>
+                            <input type="date" name="fecha_fin" id="id_fecha_fin" class="form-control" required>
+                            {% for err in form.fecha_fin.errors %}
+                                <div class="text-danger small">{{ err }}</div>
+                            {% endfor %}
+                            <div class="form-text">Máximo 14 días desde la fecha de entrega</div>
+                        </div>
+
+                        <!-- DNI del conductor -->
+                        <div class="mb-3">
+                            <label for="dni_conductor" class="form-label">DNI del conductor</label>
+                            <input type="text" name="dni_conductor" id="dni_conductor" class="form-control" required>
+                        </div>
+
+                        <!-- Selección de Tarjeta -->
+                        <div class="mb-3">
+                            <label for="tarjeta" class="form-label">Tarjeta para pago</label>
+                            <select name="tarjeta" id="tarjeta" class="form-select" required>
+                                <option value="">-- Selecciona una tarjeta --</option>
+                                {% comment %} Aquí podrías iterar sobre las tarjetas del usuario {% endcomment %}
+                                <option value="1">**** **** **** 1234</option>
+                                <option value="2">**** **** **** 5678</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100">Realizar Reserva</button>
+                    </div>
+                </div>
+            </form>
+            {% else %}
+            <p class="alert alert-warning">
+                Debes <a href="{% url 'usuarios:login' %}">iniciar sesión</a> como cliente para reservar este vehículo.
+            </p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Obtener los elementos de fecha
+        const fechaInicioInput = document.getElementById('id_fecha_inicio');
+        const fechaFinInput = document.getElementById('id_fecha_fin');
+        
+        // Establecer la fecha mínima para fecha_inicio (hoy)
+        const hoy = new Date();
+        const fechaHoy = hoy.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+        fechaInicioInput.min = fechaHoy;
+        
+        // Función para actualizar los límites de la fecha de fin
+        function actualizarFechaFin() {
+            const fechaInicio = new Date(fechaInicioInput.value);
+            if (fechaInicio) {
+                // Establecer fecha mínima para fecha_fin = fecha_inicio
+                fechaFinInput.min = fechaInicioInput.value;
+                
+                // Establecer fecha máxima para fecha_fin = fecha_inicio + 14 días
+                const fechaMaxima = new Date(fechaInicio);
+                fechaMaxima.setDate(fechaInicio.getDate() + 14);
+                const fechaMaximaStr = fechaMaxima.toISOString().split('T')[0];
+                fechaFinInput.max = fechaMaximaStr;
+                
+                // Si la fecha de fin seleccionada es anterior a la nueva fecha de inicio,
+                // o posterior a la nueva fecha máxima, actualizarla
+                const fechaFinSeleccionada = new Date(fechaFinInput.value);
+                if (fechaFinSeleccionada < fechaInicio || fechaFinSeleccionada > fechaMaxima) {
+                    fechaFinInput.value = ''; // Limpiar el campo
+                }
+            }
+        }
+        
+        // Inicializar fechas
+        if (!fechaInicioInput.value) {
+            fechaInicioInput.value = fechaHoy;
+        }
+        
+        actualizarFechaFin();
+        
+        // Añadir event listener para cuando cambie la fecha de inicio
+        fechaInicioInput.addEventListener('change', actualizarFechaFin);
+    });
+</script>
+{% endblock %}
+
+
+
+from django.urls import path
+from . import views
+
+app_name = 'reservas'
+
+urlpatterns = [
+    path('', views.ReservaListView.as_view(), name='lista'),
+    path('<int:pk>/', views.ReservaDetailView.as_view(), name='detalle'),
+    path('crear/<int:vehiculo_id>/', views.crear_reserva, name='crear_reserva'),
+    path('cancelar/<int:pk>/', views.cancelar_reserva, name='cancelar'),
+    path('admin-cancelar/<int:pk>/', views.admin_cancelar_reserva, name='admin_cancelar'),
+    
+]
+
