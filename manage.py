@@ -72,7 +72,7 @@ for estado in estados_reserva:
 print("Estados de reserva creados")
 
 # Crear metodos de pago
-metodos_pago = ['Tarjeta de Credito/Debito', 'Transferencia Bancaria', 'Efectivo']
+metodos_pago = ['Tarjeta de Credito/Debito', 'Efectivo']
 for metodo in metodos_pago:
     MetodoPago.objects.get_or_create(nombre=metodo)
 print("Metodos de pago creados")
