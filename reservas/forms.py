@@ -34,7 +34,7 @@ class ReservaForm(forms.ModelForm):
             from .models import Reserva
             reservas_existentes = Reserva.objects.filter(
                 vehiculo=self.vehiculo,
-                estado__nombre__in=['Pendiente', 'Confirmada'],
+                estado__nombre__in=['Cancelada', 'Confirmada'],
             )
             
             for reserva in reservas_existentes:

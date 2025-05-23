@@ -6,7 +6,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'alquileres_maria.settings')
 django.setup()
 
 from django.contrib.auth.models import User
-from vehiculos.models import PoliticaReembolso, TipoVehiculo, Marca, Vehiculo, Sucursal
+from vehiculos.models import Estado, PoliticaReembolso, TipoVehiculo, Marca, Vehiculo, Sucursal
 from reservas.models import EstadoReserva
 from pagos.models import MetodoPago
 from decimal import Decimal
@@ -48,6 +48,19 @@ for politica in politicas_reembolso:
     )
 print("Políticas de reembolso creadas")
 
+# Crear estados de vehículos
+estados_vehiculos = [
+    {'nombre': 'Disponible'},
+    {'nombre': 'Reservado'},
+    {'nombre': 'Mantenimiento'},
+]
+
+for estado in estados_vehiculos:
+    Estado.objects.get_or_create(
+        nombre=estado['nombre']
+    )
+print("Estados de vehículos creados")
+
 # Crear sucursales
 sucursales_data = [
     {'nombre': 'Sucursal Central', 'direccion': 'Av. 7 1234', 'ciudad': 'La Plata'},
@@ -66,10 +79,12 @@ for data in sucursales_data:
 print("Sucursales creadas")
 
 # Crear estados de reserva
-estados_reserva = ['Pendiente', 'Confirmada', 'Cancelada', 'Cancelada por Admin', 'Completada']
+estados_reserva = ['Cancelada', 'Confirmada', 'Cancelada', 'Cancelada por Admin', 'Completada']
 for estado in estados_reserva:
     EstadoReserva.objects.get_or_create(nombre=estado)
 print("Estados de reserva creados")
+
+
 
 # Crear metodos de pago
 metodos_pago = ['Tarjeta de Credito/Debito', 'Efectivo']
@@ -96,7 +111,7 @@ if not User.objects.filter(username='admin').exists():
     user.save()
     print("Superusuario creado")
 
-# Crear algunos vehiculos de ejemplo
+# Crear algunos vehículos de ejemplo
 vehiculos = [
     {
         'marca': 'Toyota',
@@ -105,11 +120,12 @@ vehiculos = [
         'ano': 2022,
         'patente': 'ABC123',
         'capacidad': 5,
-        'precio_por_dia': Decimal('50.00'),  # Actualizado nombre del campo
-        'kilometraje': 15000,  # Añadido nuevo campo
-        'politica_reembolso': 'Reembolso Completo',  # Añadido nuevo campo
+        'precio_por_dia': Decimal('50.00'),
+        'kilometraje': 15000,
+        'politica_reembolso': 'Reembolso Completo',
         'descripcion': 'Toyota Corolla en excelente estado. Ideal para viajes familiares.',
-        'sucursal': 'La Plata'
+        'sucursal': 'Sucursal Central',
+        'estado': 'Disponible'
     },
     {
         'marca': 'Ford',
@@ -118,11 +134,12 @@ vehiculos = [
         'ano': 2021,
         'patente': 'DEF456',
         'capacidad': 5,
-        'precio_por_dia': Decimal('60.00'),  # Actualizado nombre del campo
-        'kilometraje': 25000,  # Añadido nuevo campo
-        'politica_reembolso': 'Reembolso Parcial',  # Añadido nuevo campo
+        'precio_por_dia': Decimal('60.00'),
+        'kilometraje': 25000,
+        'politica_reembolso': 'Reembolso Parcial',
         'descripcion': 'Ford EcoSport con todas las comodidades. Perfecta para ciudad y ruta.',
-        'sucursal': 'La Plata'
+        'sucursal': 'Sucursal Norte',
+        'estado': 'Disponible'
     },
     {
         'marca': 'Chevrolet',
@@ -131,37 +148,70 @@ vehiculos = [
         'ano': 2020,
         'patente': 'GHI789',
         'capacidad': 5,
-        'precio_por_dia': Decimal('70.00'),  # Actualizado nombre del campo
-        'kilometraje': 35000,  # Añadido nuevo campo
-        'politica_reembolso': 'Sin Reembolso',  # Añadido nuevo campo
-        'descripcion': 'Chevrolet S10 4x4. Ideal para terrenos dificiles y carga.',
-        'sucursal': 'La Plata'
+        'precio_por_dia': Decimal('70.00'),
+        'kilometraje': 35000,
+        'politica_reembolso': 'Sin Reembolso',
+        'descripcion': 'Chevrolet S10 4x4. Ideal para terrenos difíciles y carga.',
+        'sucursal': 'Sucursal Central',
+        'estado': 'Reservado'
+    },
+    {
+        'marca': 'Honda',
+        'modelo': 'Civic',
+        'tipo': 'Sedan',
+        'ano': 2019,
+        'patente': 'JKL012',
+        'capacidad': 5,
+        'precio_por_dia': Decimal('45.00'),
+        'kilometraje': 42000,
+        'politica_reembolso': 'Reembolso Completo',
+        'descripcion': 'Honda Civic deportivo y económico. Excelente rendimiento de combustible.',
+        'sucursal': 'Sucursal Sur',
+        'estado': 'Mantenimiento'
     }
 ]
 
-
+vehiculos_creados = 0
 for v in vehiculos:
-    marca = Marca.objects.get(nombre=v['marca'])
-    tipo = TipoVehiculo.objects.get(nombre=v['tipo'])
-    politica = PoliticaReembolso.objects.get(nombre=v['politica_reembolso'])
-    sucursal = Sucursal.objects.get(nombre='Sucursal Central')  # Usada para todos los vehículos
-    
-    Vehiculo.objects.get_or_create(
-        patente=v['patente'],
-        defaults={
-            'marca': marca,
-            'modelo': v['modelo'],
-            'tipo': tipo,
-            'ano': v['ano'],
-            'capacidad': v['capacidad'],
-            'precio_por_dia': v['precio_por_dia'],
-            'kilometraje': v['kilometraje'],
-            'politica_reembolso': politica,
-            'descripcion': v['descripcion'],
-            'disponible': True,
-            'sucursal': sucursal  # Aquí se asigna la sucursal
-        }
-    )
-print("Vehiculos de ejemplo creados")
+    try:
+        marca = Marca.objects.get(nombre=v['marca'])
+        tipo = TipoVehiculo.objects.get(nombre=v['tipo'])
+        politica = PoliticaReembolso.objects.get(nombre=v['politica_reembolso'])
+        sucursal = Sucursal.objects.get(nombre=v['sucursal'])
+        estado = Estado.objects.get(nombre=v['estado'])  # Instancia de Estado
 
+        vehiculo, created = Vehiculo.objects.get_or_create(
+            patente=v['patente'],
+            defaults={
+                'marca': marca,
+                'modelo': v['modelo'],
+                'tipo': tipo,
+                'ano': v['ano'],
+                'capacidad': v['capacidad'],
+                'precio_por_dia': v['precio_por_dia'],
+                'kilometraje': v['kilometraje'],
+                'politica_reembolso': politica,
+                'descripcion': v['descripcion'],
+                'estado': estado,  # Asignar la instancia de Estado
+                'sucursal': sucursal
+            }
+        )
+
+        if created:
+            vehiculos_creados += 1
+            print(f"  → {vehiculo} - {estado}")
+
+    except Exception as e:
+        print(f"✗ Error creando vehículo {v['patente']}: {e}")
+
+print(f"✓ {vehiculos_creados} vehículos de ejemplo creados")
+
+# Mostrar resumen de estados
+print("\n📊 Resumen de vehículos por estado:")
+for estado in Estado.objects.all():
+    count = Vehiculo.objects.filter(estado=estado).count()
+    if count > 0:
+        print(f"  → {estado.nombre}: {count} vehículo(s)")
+
+print("Vehículos de ejemplo creados")
 print("Datos iniciales creados exitosamente")

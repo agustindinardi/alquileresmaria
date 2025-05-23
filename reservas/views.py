@@ -1,12 +1,14 @@
+#reservas/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, DetailView
 from django.contrib import messages
 from django.urls import reverse
+from django.db import transaction
 from .models import Reserva, EstadoReserva
 from .forms import ReservaForm, CancelarReservaForm
-from vehiculos.models import Vehiculo
+from vehiculos.models import Vehiculo, Estado
 from django.utils import timezone
 
 class ReservaListView(LoginRequiredMixin, ListView):
@@ -37,23 +39,54 @@ class ReservaDetailView(LoginRequiredMixin, DetailView):
 
 @login_required
 def crear_reserva(request, vehiculo_id):
-    vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id, disponible=True)
+    # Buscar el estado "Disponible" y el vehículo con ese estado
+    try:
+        estado_disponible = Estado.objects.get(nombre__iexact='disponible')
+        vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id, estado=estado_disponible)
+    except Estado.DoesNotExist:
+        messages.error(request, "Error: No se encontró el estado 'Disponible' en el sistema.")
+        return redirect('vehiculos:lista')
     
     if request.method == 'POST':
         form = ReservaForm(request.POST, vehiculo=vehiculo, usuario=request.user)
         if form.is_valid():
-            # Crear la reserva
-            reserva = form.save(commit=False)
-            reserva.usuario = request.user
-            reserva.vehiculo = vehiculo
-            
-            # Obtener el estado "Pendiente"
-            estado_pendiente = EstadoReserva.objects.get(nombre='Pendiente')
-            reserva.estado = estado_pendiente
-            
-            reserva.save()
-            messages.success(request, "Reserva creada exitosamente. Proceda a realizar el pago.")
-            return redirect('pagos:procesar_pago', reserva_id=reserva.id)
+            try:
+                with transaction.atomic():
+                    # Crear la reserva
+                    reserva = Reserva(
+                        vehiculo=vehiculo,
+                        usuario=request.user,
+                        fecha_inicio=form.cleaned_data['fecha_inicio'],
+                        fecha_fin=form.cleaned_data['fecha_fin']
+                    )
+                    
+                    # Obtener el estado "Confirmada" para la reserva
+                    try:
+                        estado_confirmada = EstadoReserva.objects.get(nombre__iexact='confirmada')
+                        reserva.estado = estado_confirmada
+                    except EstadoReserva.DoesNotExist:
+                        # Si no existe, crear el estado o usar el primero disponible
+                        estado_confirmada, created = EstadoReserva.objects.get_or_create(
+                            nombre='Confirmada',
+                            defaults={'descripcion': 'Reserva confirmada y activa'}
+                        )
+                        reserva.estado = estado_confirmada
+                    
+                    reserva.save()
+                    
+                    # Cambiar el estado del vehículo a reservado
+                    if vehiculo.reservar():
+                        messages.success(request, f"Reserva creada exitosamente. Vehículo {vehiculo.marca} {vehiculo.modelo} reservado.")
+                        return redirect('reservas:lista')
+                    else:
+                        # Si no se pudo reservar el vehículo, eliminar la reserva
+                        reserva.delete()
+                        messages.error(request, "No se pudo completar la reserva. El vehículo no está disponible.")
+                        return redirect('reservas:lista')
+                        
+            except Exception as e:
+                messages.error(request, f"Error al crear la reserva: {str(e)}")
+                return redirect('vehiculos:detalle', vehiculo_id)
     else:
         form = ReservaForm(vehiculo=vehiculo, usuario=request.user)
     
@@ -68,20 +101,40 @@ def cancelar_reserva(request, pk):
     
     # Verificar si la reserva puede ser cancelada por el usuario
     if not reserva.puede_cancelar_usuario():
-        messages.error(request, "No es posible cancelar la reserva con menos de 24 horas de anticipacion.")
+        messages.error(request, "No es posible cancelar la reserva con menos de 24 horas de anticipación.")
         return redirect('reservas:detalle', pk=reserva.id)
     
     if request.method == 'POST':
         form = CancelarReservaForm(request.POST)
         if form.is_valid():
-            # Obtener el estado "Cancelada"
-            estado_cancelada = EstadoReserva.objects.get(nombre='Cancelada')
-            reserva.estado = estado_cancelada
-            reserva.motivo_cancelacion = form.cleaned_data['motivo_cancelacion']
-            reserva.save()
-            
-            messages.success(request, "Reserva cancelada exitosamente.")
-            return redirect('reservas:lista')
+            try:
+                with transaction.atomic():
+                    # Obtener el estado "Cancelada" para la reserva
+                    try:
+                        estado_cancelada = EstadoReserva.objects.get(nombre__iexact='cancelada')
+                    except EstadoReserva.DoesNotExist:
+                        # Si no existe, crearlo
+                        estado_cancelada, created = EstadoReserva.objects.get_or_create(
+                            nombre='Cancelada',
+                            defaults={'descripcion': 'Reserva cancelada por el usuario'}
+                        )
+                    
+                    reserva.estado = estado_cancelada
+                    reserva.motivo_cancelacion = form.cleaned_data['motivo_cancelacion']
+                    reserva.save()
+                    
+                    # Liberar el vehículo usando el nuevo método
+                    vehiculo = reserva.vehiculo
+                    if vehiculo.liberar():
+                        messages.success(request, f"Reserva cancelada exitosamente. Vehículo {vehiculo.marca} {vehiculo.modelo} liberado.")
+                    else:
+                        messages.warning(request, f"Reserva cancelada, pero no se pudo liberar automáticamente el vehículo {vehiculo.marca} {vehiculo.modelo}.")
+                    
+                    return redirect('reservas:lista')
+                    
+            except Exception as e:
+                messages.error(request, f"Error al cancelar la reserva: {str(e)}")
+                return redirect('reservas:detalle', pk=reserva.id)
     else:
         form = CancelarReservaForm()
     
@@ -94,7 +147,7 @@ def cancelar_reserva(request, pk):
 def admin_cancelar_reserva(request, pk):
     # Solo para administradores
     if not request.user.is_staff:
-        messages.error(request, "No tiene permisos para realizar esta accion.")
+        messages.error(request, "No tiene permisos para realizar esta acción.")
         return redirect('home')
     
     reserva = get_object_or_404(Reserva, id=pk)
@@ -102,14 +155,34 @@ def admin_cancelar_reserva(request, pk):
     if request.method == 'POST':
         form = CancelarReservaForm(request.POST)
         if form.is_valid():
-            # Obtener el estado "Cancelada por Admin"
-            estado_cancelada = EstadoReserva.objects.get(nombre='Cancelada por Admin')
-            reserva.estado = estado_cancelada
-            reserva.motivo_cancelacion = form.cleaned_data['motivo_cancelacion']
-            reserva.save()
-            
-            messages.success(request, "Reserva cancelada exitosamente.")
-            return redirect('admin:reservas_reserva_changelist')
+            try:
+                with transaction.atomic():
+                    # Obtener el estado "Cancelada por Admin" para la reserva
+                    try:
+                        estado_cancelada = EstadoReserva.objects.get(nombre__iexact='cancelada por admin')
+                    except EstadoReserva.DoesNotExist:
+                        # Si no existe, crearlo
+                        estado_cancelada, created = EstadoReserva.objects.get_or_create(
+                            nombre='Cancelada por Admin',
+                            defaults={'descripcion': 'Reserva cancelada por un administrador'}
+                        )
+                    
+                    reserva.estado = estado_cancelada
+                    reserva.motivo_cancelacion = form.cleaned_data['motivo_cancelacion']
+                    reserva.save()
+                    
+                    # Liberar el vehículo usando el nuevo método
+                    vehiculo = reserva.vehiculo
+                    if vehiculo.liberar():
+                        messages.success(request, f"Reserva cancelada exitosamente por administrador. Vehículo {vehiculo.marca} {vehiculo.modelo} liberado.")
+                    else:
+                        messages.warning(request, f"Reserva cancelada, pero no se pudo liberar automáticamente el vehículo {vehiculo.marca} {vehiculo.modelo}.")
+                    
+                    return redirect('admin:reservas_reserva_changelist')
+                    
+            except Exception as e:
+                messages.error(request, f"Error al cancelar la reserva: {str(e)}")
+                return redirect('admin:reservas_reserva_changelist')
     else:
         form = CancelarReservaForm()
     

@@ -38,14 +38,16 @@ class Reserva(models.Model):
             raise ValidationError("La fecha de fin debe ser posterior a la fecha de inicio.")
         
         # Validar que el vehiculo no este reservado en las fechas seleccionadas
-        reservas_existentes = Reserva.objects.filter(
-            vehiculo=self.vehiculo,
-            estado__nombre__in=['Pendiente', 'Confirmada'],
-        ).exclude(id=self.id)
-        
-        for reserva in reservas_existentes:
-            if (self.fecha_inicio <= reserva.fecha_fin and self.fecha_fin >= reserva.fecha_inicio):
-                raise ValidationError(f"El vehiculo ya esta reservado en el periodo seleccionado. Reserva conflictiva: {reserva}")
+        # Solo si tenemos un vehículo asignado
+        if hasattr(self, 'vehiculo') and self.vehiculo:
+            reservas_existentes = Reserva.objects.filter(
+                vehiculo=self.vehiculo,
+                estado__nombre__in=['Cancelada', 'Confirmada'],
+            ).exclude(id=self.id)
+            
+            for reserva in reservas_existentes:
+                if (self.fecha_inicio <= reserva.fecha_fin and self.fecha_fin >= reserva.fecha_inicio):
+                    raise ValidationError(f"El vehiculo ya esta reservado en el periodo seleccionado. Reserva conflictiva: {reserva}")
     
     def save(self, *args, **kwargs):
         self.clean()
