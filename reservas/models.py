@@ -69,3 +69,22 @@ class Reserva(models.Model):
         verbose_name = "Reserva"
         verbose_name_plural = "Reservas"
         ordering = ['-fecha_creacion']
+
+class Tarjeta(models.Model):
+    TIPO_CHOICES = [
+        ('debito', 'Débito'),
+        ('credito', 'Crédito'),
+    ]
+
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
+    numero = models.CharField(max_length=16, unique=True)
+    vencimiento = models.DateField()
+    pin = models.CharField(max_length=3)
+    saldo = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} - **** **** **** {self.numero[-4:]}"
+
+    class Meta:
+        verbose_name = "Tarjeta"
+        verbose_name_plural = "Tarjetas"

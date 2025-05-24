@@ -87,15 +87,45 @@
                         </div>
 
                         <!-- Selección de Tarjeta -->
-                        <div class="mb-3">
-                            <label for="tarjeta" class="form-label">Tarjeta para pago</label>
-                            <select name="tarjeta" id="tarjeta" class="form-select" required>
-                                <option value="">-- Selecciona una tarjeta --</option>
-                                {% comment %} Aquí podrías iterar sobre las tarjetas del usuario {% endcomment %}
-                                <option value="1">**** **** **** 1234</option>
-                                <option value="2">**** **** **** 5678</option>
-                            </select>
+                        <!-- Número de Tarjeta -->
+                        <div class="card border-secondary mb-4">
+                            <div class="card-header bg-secondary text-white">
+                                <strong>Datos de la Tarjeta</strong>
+                            </div>
+                            <div class="card-body">
+
+                                <!-- Número de Tarjeta -->
+                                <div class="mb-3">
+                                    <label for="{{ form.numero_tarjeta.id_for_label }}" class="form-label">Número de Tarjeta</label>
+                                    {{ form.numero_tarjeta }}
+                                    {% for err in form.numero_tarjeta.errors %}
+                                        <div class="text-danger small">{{ err }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <!-- PIN de Tarjeta -->
+                                <div class="mb-3">
+                                    <label for="{{ form.pin_tarjeta.id_for_label }}" class="form-label">PIN</label>
+                                    {{ form.pin_tarjeta }}
+                                    {% for err in form.pin_tarjeta.errors %}
+                                        <div class="text-danger small">{{ err }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <!-- Vencimiento de Tarjeta -->
+                                <div class="mb-3">
+                                    <label for="{{ form.vencimiento_tarjeta.id_for_label }}" class="form-label">Fecha de Vencimiento</label>
+                                    {{ form.vencimiento_tarjeta }}
+                                    {% for err in form.vencimiento_tarjeta.errors %}
+                                        <div class="text-danger small">{{ err }}</div>
+                                    {% endfor %}
+                                </div>
+
+                            </div>
                         </div>
+
+
+
 
                         <button type="submit" class="btn btn-success w-100">Realizar Reserva</button>
                     </div>

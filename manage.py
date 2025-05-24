@@ -9,6 +9,7 @@ from django.contrib.auth.models import User
 from vehiculos.models import Estado, PoliticaReembolso, TipoVehiculo, Marca, Vehiculo, Sucursal
 from reservas.models import EstadoReserva
 from pagos.models import MetodoPago
+from reservas.models import Tarjeta
 from decimal import Decimal
 
 #!/usr/bin/env python
@@ -214,4 +215,43 @@ for estado in Estado.objects.all():
         print(f"  → {estado.nombre}: {count} vehículo(s)")
 
 print("Vehículos de ejemplo creados")
+
+# Plantillas de tarjetas de crédito
+tarjetas_template = [
+    {
+        'tipo': 'credito', # Tarjeta de credito con saldo suficiente y vencimiento valido 
+        'numero': '1234567890101112',
+        'vencimiento': '2032-12-31',  
+        'pin': '112',  
+        'saldo': Decimal('150000.00') 
+    },
+    {
+        'tipo': 'debito', # Tarjeta de debito con saldo mas o menos y vencimiento valido
+        'numero': '1211100987654321',
+        'vencimiento': '2031-01-01',
+        'pin': '321',
+        'saldo': Decimal('50000.00')
+    },
+    {
+        'tipo': 'credito',  # Tarjeta de credito vencida
+        'numero': '1314151617181920',
+        'vencimiento': '2023-12-12',
+        'pin': '920',
+        'saldo': Decimal('0.00')
+    }
+]
+
+for tarjeta_data in tarjetas_template:
+    Tarjeta.objects.get_or_create(
+        numero=tarjeta_data['numero'],
+        defaults={
+            'tipo': tarjeta_data['tipo'],
+            'vencimiento': tarjeta_data['vencimiento'],
+            'pin': tarjeta_data['pin'],
+            'saldo': tarjeta_data['saldo']
+        }
+    )
+
+print("Tarjetas de ejemplo creadas")
+
 print("Datos iniciales creados exitosamente")
