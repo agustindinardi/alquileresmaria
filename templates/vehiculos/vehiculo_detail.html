@@ -52,7 +52,7 @@
 
         <div class="d-grid gap-2">
             {% if not user.is_staff %}
-                <a href="{% url 'reservas:crear' vehiculo.pk %}" class="btn btn-primary">Reservar</a>
+                <a href="{% url 'reservas:crear' vehiculo.pk %}" class="btn btn-primary">Continuar con la reserva</a>
             {% endif %}
         </div>
     </div>

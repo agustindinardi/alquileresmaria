@@ -147,14 +147,14 @@
                                 {% endif %}
                             </div>
 
-                            <!-- Disponible -->
-                            <div class="mb-3 form-check">
-                                {{ form.disponible }}
-                                <label class="form-check-label" for="{{ form.disponible.id_for_label }}">
-                                    {{ form.disponible.label }}
+                            <!-- Estado -->
+                            <div class="mb-3">
+                                <label for="{{ form.estado.id_for_label }}" class="form-label">
+                                    {{ form.estado.label }}{% if form.estado.field.required %}*{% endif %}
                                 </label>
-                                {% if form.disponible.help_text %}
-                                    <div class="form-text">{{ form.disponible.help_text }}</div>
+                                {{ form.estado|add_class:"form-select" }}
+                                {% if form.estado.errors %}
+                                    <div class="text-danger small">{{ form.estado.errors }}</div>
                                 {% endif %}
                             </div>
                         </div>

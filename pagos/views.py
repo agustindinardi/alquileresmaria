@@ -10,11 +10,6 @@ from django.urls import reverse
 def procesar_pago(request, reserva_id):
     reserva = get_object_or_404(Reserva, id=reserva_id, usuario=request.user)
     
-    # Verificar que la reserva este pendiente de pago
-    if reserva.estado.nombre != 'Pendiente':
-        messages.error(request, "Esta reserva no esta pendiente de pago.")
-        return redirect('reservas:detalle', pk=reserva.id)
-    
     # Calcular el monto total
     monto_total = reserva.calcular_total()
     

@@ -1,81 +1,17 @@
-# from django.shortcuts import render, get_object_or_404
-# from django.views.generic import ListView, DetailView
-# from .models import Vehiculo, TipoVehiculo, Marca
-# from .forms import BusquedaVehiculoForm
-# from reservas.models import Reserva
-# from django.db.models import Q
-
-# class VehiculoListView(ListView):
-#     model = Vehiculo
-#     template_name = 'vehiculos/vehiculo_list.html'
-#     context_object_name = 'vehiculos'
-#     paginate_by = 9
-    
-#     def get_queryset(self):
-#         queryset = Vehiculo.objects.filter(disponible=True)
-        
-#         # Aplicar filtros de busqueda
-#         form = BusquedaVehiculoForm(self.request.GET)
-#         if form.is_valid():
-#             fecha_inicio = form.cleaned_data.get('fecha_inicio')
-#             fecha_fin = form.cleaned_data.get('fecha_fin')
-#             tipo = form.cleaned_data.get('tipo')
-#             marca = form.cleaned_data.get('marca')
-#             capacidad_minima = form.cleaned_data.get('capacidad_minima')
-            
-#             # Filtrar por tipo de vehiculo
-#             if tipo:
-#                 queryset = queryset.filter(tipo=tipo)
-            
-#             # Filtrar por marca
-#             if marca:
-#                 queryset = queryset.filter(marca=marca)
-            
-#             # Filtrar por capacidad minima
-#             if capacidad_minima:
-#                 queryset = queryset.filter(capacidad__gte=capacidad_minima)
-            
-#             # Filtrar vehiculos disponibles en el rango de fechas
-#             if fecha_inicio and fecha_fin:
-#                 # Obtener IDs de vehiculos con reservas en el rango de fechas
-#                 reservas = Reserva.objects.filter(
-#                     Q(fecha_inicio__lte=fecha_fin) & Q(fecha_fin__gte=fecha_inicio),
-#                     estado__nombre__in=['Pendiente', 'Confirmada']
-#                 ).values_list('vehiculo_id', flat=True)
-                
-#                 # Excluir vehiculos con reservas en el rango de fechas
-#                 queryset = queryset.exclude(id__in=reservas)
-        
-#         return queryset
-    
-#     def get_context_data(self, **kwargs):
-#         context = super().get_context_data(**kwargs)
-#         context['form'] = BusquedaVehiculoForm(self.request.GET)
-#         return context
-
-# class VehiculoDetailView(DetailView):
-#     model = Vehiculo
-#     template_name = 'vehiculos/vehiculo_detail.html'
-#     context_object_name = 'vehiculo'
-    
-#     def get_context_data(self, **kwargs):
-#         context = super().get_context_data(**kwargs)
-#         # Anadir formulario de reserva
-#         from reservas.forms import ReservaForm
-#         context['form'] = ReservaForm(vehiculo=self.object, usuario=self.request.user)
-#         return context
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.db import IntegrityError
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
+import json
 
-from .models import Vehiculo, Marca, TipoVehiculo, PoliticaReembolso, Sucursal
-from .forms import VehiculoForm
+from .models import Vehiculo, Marca, TipoVehiculo, PoliticaReembolso, Sucursal, Estado
+from .forms import VehiculoForm, VehiculoEstadoForm
 
 # Función auxiliar para comprobar si el usuario es staff
 def es_staff(user):
@@ -92,12 +28,29 @@ class VehiculoListView(ListView):
         """Personalizar la consulta para filtrar los vehículos."""
         queryset = super().get_queryset()
         
-        # Filtrar por disponibilidad (si se especifica en la URL)
+        # Filtrar por estado usando el nombre del estado
+        estado_nombre = self.request.GET.get('estado')
+        if estado_nombre:
+            try:
+                estado = Estado.objects.get(nombre__iexact=estado_nombre)
+                queryset = queryset.filter(estado=estado)
+            except Estado.DoesNotExist:
+                pass  # Ignorar si el estado no existe
+        
+        # Mantener compatibilidad con filtro de disponibilidad
         disponible = self.request.GET.get('disponible')
         if disponible == 'true':
-            queryset = queryset.filter(disponible=True)
+            try:
+                estado_disponible = Estado.objects.get(nombre__iexact='disponible')
+                queryset = queryset.filter(estado=estado_disponible)
+            except Estado.DoesNotExist:
+                pass
         elif disponible == 'false':
-            queryset = queryset.filter(disponible=False)
+            try:
+                estado_disponible = Estado.objects.get(nombre__iexact='disponible')
+                queryset = queryset.exclude(estado=estado_disponible)
+            except Estado.DoesNotExist:
+                pass
             
         # Filtrar por marca (si se especifica en la URL)
         marca_id = self.request.GET.get('marca')
@@ -122,6 +75,37 @@ class VehiculoListView(ListView):
         context['marcas'] = Marca.objects.all()
         context['tipos'] = TipoVehiculo.objects.all()
         context['sucursales'] = Sucursal.objects.all()
+        context['estados'] = Estado.objects.all()
+        
+        # Estadísticas de estados
+        stats = {'total': Vehiculo.objects.count()}
+        
+        # Contar vehículos por cada estado existente
+        for estado in Estado.objects.all():
+            estado_key = estado.nombre.lower().replace(' ', '_')
+            stats[estado_key] = Vehiculo.objects.filter(estado=estado).count()
+        
+        # Mantener compatibilidad con nombres específicos si existen
+        try:
+            disponible_estado = Estado.objects.get(nombre__iexact='disponible')
+            stats['disponibles'] = Vehiculo.objects.filter(estado=disponible_estado).count()
+        except Estado.DoesNotExist:
+            stats['disponibles'] = 0
+            
+        try:
+            reservado_estado = Estado.objects.get(nombre__iexact='reservado')
+            stats['reservados'] = Vehiculo.objects.filter(estado=reservado_estado).count()
+        except Estado.DoesNotExist:
+            stats['reservados'] = 0
+            
+        try:
+            mantenimiento_estado = Estado.objects.get(nombre__iexact='mantenimiento')
+            stats['mantenimiento'] = Vehiculo.objects.filter(estado=mantenimiento_estado).count()
+        except Estado.DoesNotExist:
+            stats['mantenimiento'] = 0
+        
+        context['stats'] = stats
+        
         return context
 
 class VehiculoDetailView(DetailView):
@@ -129,6 +113,17 @@ class VehiculoDetailView(DetailView):
     model = Vehiculo
     template_name = 'vehiculos/vehiculo_detail.html'
     context_object_name = 'vehiculo'
+
+    def get_context_data(self, **kwargs):
+        """Añadir datos adicionales al contexto."""
+        context = super().get_context_data(**kwargs)
+        
+        # Agregar formulario para cambio de estado si el usuario es staff
+        if self.request.user.is_staff:
+            context['estado_form'] = VehiculoEstadoForm(instance=self.object)
+            context['estados_disponibles'] = Estado.objects.all()
+        
+        return context
 
 class VehiculoCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """Vista para crear un nuevo vehículo (solo staff)."""
@@ -147,7 +142,12 @@ class VehiculoCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             # Intenta guardar el formulario
             response = super().form_valid(form)
             # Si todo va bien, mostrar mensaje de éxito
-            messages.success(self.request, f'¡Vehículo {self.object.marca} {self.object.modelo} con patente {self.object.patente} creado correctamente!')
+            estado_display = self.object.estado.nombre if self.object.estado else 'Sin estado'
+            messages.success(
+                self.request, 
+                f'¡Vehículo {self.object.marca} {self.object.modelo} con patente {self.object.patente} '
+                f'creado correctamente! Estado: {estado_display}'
+            )
             return response
         except IntegrityError as e:
             # Si hay un error de integridad (patente duplicada), mostrarlo
@@ -199,5 +199,20 @@ class VehiculoDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     def delete(self, request, *args, **kwargs):
         """Personalizar el proceso de eliminación."""
         vehiculo = self.get_object()
-        messages.success(request, f'El vehículo {vehiculo.marca} {vehiculo.modelo} ha sido eliminado.')
+        
+        # Verificar si el vehículo está reservado
+        if vehiculo.esta_reservado():
+            messages.error(
+                request, 
+                f'No se puede eliminar el vehículo {vehiculo.marca} {vehiculo.modelo} '
+                f'porque está actualmente reservado.'
+            )
+            return HttpResponseRedirect(reverse('vehiculos:detalle', kwargs={'pk': vehiculo.pk}))
+        
+        estado_display = vehiculo.estado.nombre if vehiculo.estado else 'Sin estado'
+        messages.success(
+            request, 
+            f'El vehículo {vehiculo.marca} {vehiculo.modelo} ({estado_display}) ha sido eliminado.'
+        )
         return super().delete(request, *args, **kwargs)
+
