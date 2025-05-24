@@ -11,13 +11,18 @@ class UserForm(UserCreationForm):
         model = User
         fields = ['username', 'first_name', 'last_name', 'email']
 
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if User.objects.filter(username=username).exists():
+            raise forms.ValidationError("Este nombre de usuario ya está registrado.")
+        return username
+    
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if User.objects.filter(email=email).exists():
             raise forms.ValidationError("Este correo electronico ya esta registrado.")
         return email
     
-
     def clean_password1(self):
         password = self.cleaned_data.get('password1')
         if len(password) > 8:
@@ -40,6 +45,15 @@ class PerfilForm(forms.ModelForm):
             raise forms.ValidationError("Debes ser mayor de 18 años para registrarte.")
         return fecha_nacimiento
       
+     
+    def clean_dni(self):
+        dni = self.cleaned_data.get('dni')
+        if Perfil.objects.filter(dni=dni).exists():
+            raise forms.ValidationError("Este DNI ya está registrado.")
+        if not dni.isdigit():
+            raise forms.ValidationError("El DNI debe contener solo números.")
+        return dni
+ 
 #Formulario para loguearse
 class EmailLoginForm(AuthenticationForm):
     username = forms.EmailField(label="Correo electrónico")
