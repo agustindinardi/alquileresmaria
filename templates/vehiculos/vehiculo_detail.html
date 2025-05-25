@@ -11,13 +11,13 @@
 </head>
 <h1>Detalle del vehiculo  </h1>
 <div>
-    <div style="float: right; border: 0.1cm inset black; border-radius: 5px;">
+    <div class="d-flex justify-content-center align-items-center" style="width: 638px; height: 426px; float: right; border: 0.1cm inset black; border-radius: 5px;">
         {% if vehiculo.imagen %}
-        <img src="{{ vehiculo.imagen.url }}" class="card-img-top" alt="{{ vehiculo }}" style="height: 300px; width: 600px;">
+            <img src="{{ vehiculo.imagen.url }}" class="card-img-top" alt="{{ vehiculo }}" style="width: 632px; height: 420px; object-fit: cover;">
         {% else %}
-        <div class="card-img-top bg-light d-flex justify-content-center align-items-center" style="height: 200px; margin-right: 350px;">
+
             <i class="fas fa-car fa-3x text-secondary"></i>
-        </div>
+
         {% endif %}
     </div>
     
@@ -30,7 +30,7 @@
             <span class="badge bg-info text-dark" style="font-size: 18px;">{{ vehiculo.tipo }}</span>
         </p>
 
-        <ul class="list-group list-group-flush mb-3">
+        <ul class="list-group list-group-flush mb-3" style="width: 400px;">
             <li class="lista-detalles list-group-item" style="border-radius: 4px; margin-top: 10px; background-color: #bdc6bd;"><i class="fas fa-users me-2" style="margin-right: 10px;"></i> {{ vehiculo.capacidad }} pasajeros</li>
             <li class="list-group-item" style="border-radius: 4px; margin-top: 10px; background-color: #bdc6bd;"><i class="fas fa-calendar me-2" style="margin-right: 10px;"></i> {{ vehiculo.ano }}</li>
             <li class="list-group-item" style="border-radius: 4px; margin-top: 10px; background-color: #bdc6bd;"><i class="fas fa-money-bill-wave me-2" style="margin-right: 10px;"></i> ${{ vehiculo.precio_por_dia }} / día</li>
@@ -50,9 +50,13 @@
             </div>
         </ul>
 
-        <div class="d-grid gap-2">
+       <div class="d-grid gap-2">
             {% if not user.is_staff %}
-                <a href="{% url 'reservas:crear' vehiculo.pk %}" class="btn btn-primary">Reservar</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'reservas:crear' vehiculo.pk %}" class="btn btn-primary">Continuar con la reserva</a>
+                {% else %}
+                    <a href="http://127.0.0.1:8000/usuarios/login/" class="btn btn-primary">Iniciar sesión para reservar</a>
+                {% endif %}
             {% endif %}
         </div>
     </div>
