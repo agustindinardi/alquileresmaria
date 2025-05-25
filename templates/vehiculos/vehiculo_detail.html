@@ -50,9 +50,13 @@
             </div>
         </ul>
 
-        <div class="d-grid gap-2">
+       <div class="d-grid gap-2">
             {% if not user.is_staff %}
-                <a href="{% url 'reservas:crear' vehiculo.pk %}" class="btn btn-primary">Continuar con la reserva</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'reservas:crear' vehiculo.pk %}" class="btn btn-primary">Continuar con la reserva</a>
+                {% else %}
+                    <a href="http://127.0.0.1:8000/usuarios/login/" class="btn btn-primary">Iniciar sesión para reservar</a>
+                {% endif %}
             {% endif %}
         </div>
     </div>
