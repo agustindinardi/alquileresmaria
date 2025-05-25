@@ -84,7 +84,9 @@ class ReservaForm(forms.ModelForm):
             total = dias * self.vehiculo.precio_por_dia
             if tarjeta.saldo < total:
                 self.add_error(None, "La tarjeta no tiene saldo suficiente para realizar la reserva.")
-
+            else:   # Descrementamos el saldo de la tarjeta
+                tarjeta.saldo -= total
+                tarjeta.save()
 
         return cleaned_data
 
