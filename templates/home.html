@@ -188,4 +188,27 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fechaEntrega = document.querySelector('input[name="fecha_entrega"]');
+    const fechaDevolucion = document.querySelector('input[name="fecha_devolucion"]');
+    
+    if (fechaEntrega && fechaDevolucion) {
+        fechaEntrega.addEventListener('change', function() {
+            if (this.value) {
+                // Establecer fecha mínima de devolución como el día siguiente a la entrega
+                const entrega = new Date(this.value);
+                entrega.setDate(entrega.getDate() + 1);
+                fechaDevolucion.min = entrega.toISOString().split('T')[0];
+                
+                // Si la fecha de devolución actual es anterior, limpiarla
+                if (fechaDevolucion.value && fechaDevolucion.value <= this.value) {
+                    fechaDevolucion.value = '';
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
