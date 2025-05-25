@@ -3,12 +3,107 @@
 {% block title %}Inicio - Alquileres Maria{% endblock %}
 
 {% block content %}
-<div class="jumbotron bg-light p-5 rounded">
+<div class="jumbotron bg-light p-5 rounded mb-5">
     <h1 class="display-4">Bienvenido a Alquileres Maria</h1>
-    <p class="lead">La mejor opcion para alquilar vehiculos de calidad a precios competitivos.</p>
+    <p class="lead">La mejor opción para alquilar vehículos de calidad a precios competitivos.</p>
     <hr class="my-4">
-    <p>Explora nuestra amplia gama de vehiculos y encuentra el que mejor se adapte a tus necesidades.</p>
-    <a class="btn btn-success btn-lg" href="{% url 'vehiculos:lista' %}" role="button">Ver Vehiculos</a>
+    <p>Encuentra el vehículo perfecto para tu próximo viaje.</p>
+</div>
+
+<!-- Formulario de búsqueda -->
+<div class="card mb-5">
+    <div class="card-header bg-success text-white">
+        <h3 class="mb-0">
+            <i class="fas fa-search me-2"></i>Buscar Vehículo
+        </h3>
+    </div>
+    <div class="card-body">
+        <form method="post" class="row g-3">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div class="col-12">
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="col-md-6">
+                <label for="{{ form.fecha_entrega.id_for_label }}" class="form-label">
+                    <i class="fas fa-calendar-alt me-1"></i>{{ form.fecha_entrega.label }}
+                    {% if not user.is_staff %}<span class="text-danger">*</span>{% endif %}
+                </label>
+                {{ form.fecha_entrega }}
+                {% if form.fecha_entrega.help_text %}
+                    <div class="form-text">{{ form.fecha_entrega.help_text }}</div>
+                {% endif %}
+                {% if form.fecha_entrega.errors %}
+                    <div class="text-danger small">{{ form.fecha_entrega.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-6">
+                <label for="{{ form.fecha_devolucion.id_for_label }}" class="form-label">
+                    <i class="fas fa-calendar-check me-1"></i>{{ form.fecha_devolucion.label }}
+                    {% if not user.is_staff %}<span class="text-danger">*</span>{% endif %}
+                </label>
+                {{ form.fecha_devolucion }}
+                {% if form.fecha_devolucion.help_text %}
+                    <div class="form-text">{{ form.fecha_devolucion.help_text }}</div>
+                {% endif %}
+                {% if form.fecha_devolucion.errors %}
+                    <div class="text-danger small">{{ form.fecha_devolucion.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+                <label for="{{ form.sucursal.id_for_label }}" class="form-label">
+                    <i class="fas fa-building me-1"></i>{{ form.sucursal.label }}
+                </label>
+                {{ form.sucursal }}
+                {% if form.sucursal.errors %}
+                    <div class="text-danger small">{{ form.sucursal.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+                <label for="{{ form.categoria.id_for_label }}" class="form-label">
+                    <i class="fas fa-car me-1"></i>{{ form.categoria.label }}
+                </label>
+                {{ form.categoria }}
+                {% if form.categoria.errors %}
+                    <div class="text-danger small">{{ form.categoria.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+                <label for="{{ form.capacidad.id_for_label }}" class="form-label">
+                    <i class="fas fa-users me-1"></i>{{ form.capacidad.label }}
+                </label>
+                {{ form.capacidad }}
+                {% if form.capacidad.errors %}
+                    <div class="text-danger small">{{ form.capacidad.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-6">
+                <label for="{{ form.kilometraje.id_for_label }}" class="form-label">
+                    <i class="fas fa-tachometer-alt me-1"></i>{{ form.kilometraje.label }}
+                </label>
+                {{ form.kilometraje }}
+                {% if form.kilometraje.errors %}
+                    <div class="text-danger small">{{ form.kilometraje.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-6 d-flex align-items-end">
+                <button type="submit" class="btn btn-success btn-lg w-100">
+                    <i class="fas fa-search me-2"></i>Buscar Vehículos
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <div class="row mt-5">
@@ -17,7 +112,7 @@
             <div class="card-body text-center">
                 <i class="fas fa-car fa-3x mb-3 text-success"></i>
                 <h5 class="card-title">Amplia Flota</h5>
-                <p class="card-text">Contamos con una amplia variedad de vehiculos para satisfacer todas tus necesidades.</p>
+                <p class="card-text">Contamos con una amplia variedad de vehículos para satisfacer todas tus necesidades.</p>
             </div>
         </div>
     </div>
@@ -34,8 +129,8 @@
         <div class="card mb-4">
             <div class="card-body text-center">
                 <i class="fas fa-headset fa-3x mb-3 text-success"></i>
-                <h5 class="card-title">Atencion Personalizada</h5>
-                <p class="card-text">Nuestro equipo esta disponible para ayudarte en todo lo que necesites.</p>
+                <h5 class="card-title">Atención Personalizada</h5>
+                <p class="card-text">Nuestro equipo está disponible para ayudarte en todo lo que necesites.</p>
             </div>
         </div>
     </div>
@@ -43,7 +138,7 @@
 
 <div class="row mt-4">
     <div class="col-12">
-        <h2 class="text-center mb-4">¿Como funciona?</h2>
+        <h2 class="text-center mb-4">¿Cómo funciona?</h2>
     </div>
 </div>
 
@@ -55,7 +150,7 @@
                     <span class="h5 mb-0">1</span>
                 </div>
                 <h5 class="card-title">Busca</h5>
-                <p class="card-text">Explora nuestras sucursales y encuentra el vehiculo perfecto para ti.</p>
+                <p class="card-text">Explora nuestras sucursales y encuentra el vehículo perfecto para ti.</p>
             </div>
         </div>
     </div>
@@ -77,7 +172,7 @@
                     <span class="h5 mb-0">3</span>
                 </div>
                 <h5 class="card-title">Paga</h5>
-                <p class="card-text">Realiza el pago de forma segura con tarjeta de credito o debito.</p>
+                <p class="card-text">Realiza el pago de forma segura con tarjeta de crédito o débito.</p>
             </div>
         </div>
     </div>
@@ -88,7 +183,7 @@
                     <span class="h5 mb-0">4</span>
                 </div>
                 <h5 class="card-title">Disfruta</h5>
-                <p class="card-text">Recoge tu vehiculo y disfruta de tu viaje sin preocupaciones.</p>
+                <p class="card-text">Recoge tu vehículo y disfruta de tu viaje sin preocupaciones.</p>
             </div>
         </div>
     </div>

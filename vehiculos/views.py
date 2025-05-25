@@ -9,13 +9,55 @@ from django.db import IntegrityError
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 import json
+from django.db.models import Q
 
 from .models import Vehiculo, Marca, TipoVehiculo, PoliticaReembolso, Sucursal, Estado
-from .forms import VehiculoForm, VehiculoEstadoForm
+from .forms import VehiculoForm, VehiculoEstadoForm, BusquedaVehiculoForm
 
 # Función auxiliar para comprobar si el usuario es staff
 def es_staff(user):
     return user.is_staff
+
+def home_view(request):
+    """Vista para la página de inicio con formulario de búsqueda."""
+    # Pasar información de si es staff al formulario
+    form = BusquedaVehiculoForm(is_staff=request.user.is_staff)
+    
+    if request.method == 'POST':
+        form = BusquedaVehiculoForm(request.POST, is_staff=request.user.is_staff)
+        if form.is_valid():
+            # Construir URL con parámetros de búsqueda
+            params = []
+            
+            if form.cleaned_data['fecha_entrega']:
+                params.append(f"fecha_entrega={form.cleaned_data['fecha_entrega']}")
+            
+            if form.cleaned_data['fecha_devolucion']:
+                params.append(f"fecha_devolucion={form.cleaned_data['fecha_devolucion']}")
+            
+            if form.cleaned_data['sucursal']:
+                params.append(f"sucursal={form.cleaned_data['sucursal'].id}")
+            
+            if form.cleaned_data['categoria']:
+                params.append(f"tipo={form.cleaned_data['categoria'].id}")
+            
+            if form.cleaned_data['capacidad']:
+                params.append(f"capacidad={form.cleaned_data['capacidad']}")
+            
+            if form.cleaned_data['kilometraje']:
+                params.append(f"kilometraje={form.cleaned_data['kilometraje']}")
+            
+            # Redirigir a la lista de vehículos con los filtros
+            url = reverse('vehiculos:lista')
+            if params:
+                url += '?' + '&'.join(params)
+            
+            return redirect(url)
+    
+    context = {
+        'form': form,
+    }
+    return render(request, 'home.html', context)
 
 class VehiculoListView(ListView):
     """Vista para listar todos los vehículos."""
@@ -28,6 +70,38 @@ class VehiculoListView(ListView):
         """Personalizar la consulta para filtrar los vehículos."""
         queryset = super().get_queryset()
         
+        # Filtros de búsqueda por disponibilidad en fechas
+        fecha_entrega = self.request.GET.get('fecha_entrega')
+        fecha_devolucion = self.request.GET.get('fecha_devolucion')
+        
+        # Solo aplicar filtro de fechas si ambas están presentes
+        if fecha_entrega and fecha_devolucion:
+            # Importar aquí para evitar importación circular
+            from reservas.models import Reserva
+            
+            # Obtener vehículos que NO tienen reservas en el rango de fechas
+            reservas_conflictivas = Reserva.objects.filter(
+                Q(fecha_inicio__lte=fecha_devolucion) & Q(fecha_fin__gte=fecha_entrega),
+                estado__nombre__in=['Confirmada', 'Activa']  # Solo reservas activas
+            ).values_list('vehiculo_id', flat=True)
+            
+            queryset = queryset.exclude(id__in=reservas_conflictivas)
+            
+            # Solo mostrar vehículos disponibles (no en mantenimiento) cuando se filtran por fechas
+            try:
+                estado_disponible = Estado.objects.get(nombre__iexact='disponible')
+                queryset = queryset.filter(estado=estado_disponible)
+            except Estado.DoesNotExist:
+                pass
+        
+        # Si no es staff y no hay filtros de fecha, mostrar solo disponibles por defecto
+        elif not self.request.user.is_staff:
+            try:
+                estado_disponible = Estado.objects.get(nombre__iexact='disponible')
+                queryset = queryset.filter(estado=estado_disponible)
+            except Estado.DoesNotExist:
+                pass
+        
         # Filtrar por estado usando el nombre del estado
         estado_nombre = self.request.GET.get('estado')
         if estado_nombre:
@@ -35,7 +109,7 @@ class VehiculoListView(ListView):
                 estado = Estado.objects.get(nombre__iexact=estado_nombre)
                 queryset = queryset.filter(estado=estado)
             except Estado.DoesNotExist:
-                pass  # Ignorar si el estado no existe
+                pass
         
         # Mantener compatibilidad con filtro de disponibilidad
         disponible = self.request.GET.get('disponible')
@@ -57,7 +131,7 @@ class VehiculoListView(ListView):
         if marca_id:
             queryset = queryset.filter(marca_id=marca_id)
             
-        # Filtrar por tipo (si se especifica en la URL)
+        # Filtrar por tipo/categoría (si se especifica en la URL)
         tipo_id = self.request.GET.get('tipo')
         if tipo_id:
             queryset = queryset.filter(tipo_id=tipo_id)
@@ -66,6 +140,22 @@ class VehiculoListView(ListView):
         sucursal_id = self.request.GET.get('sucursal')
         if sucursal_id:
             queryset = queryset.filter(sucursal_id=sucursal_id)
+        
+        # Filtrar por capacidad
+        capacidad = self.request.GET.get('capacidad')
+        if capacidad:
+            if capacidad == '8':  # 8+ pasajeros
+                queryset = queryset.filter(capacidad__gte=8)
+            else:
+                queryset = queryset.filter(capacidad=capacidad)
+        
+        # Filtrar por kilometraje
+        kilometraje = self.request.GET.get('kilometraje')
+        if kilometraje:
+            if kilometraje == '0':
+                queryset = queryset.filter(kilometraje=0)
+            else:
+                queryset = queryset.filter(kilometraje__lt=int(kilometraje))
             
         return queryset
 
@@ -76,6 +166,44 @@ class VehiculoListView(ListView):
         context['tipos'] = TipoVehiculo.objects.all()
         context['sucursales'] = Sucursal.objects.all()
         context['estados'] = Estado.objects.all()
+        
+        # Formulario de búsqueda con datos actuales
+        initial_data = {}
+        if self.request.GET.get('fecha_entrega'):
+            initial_data['fecha_entrega'] = self.request.GET.get('fecha_entrega')
+        if self.request.GET.get('fecha_devolucion'):
+            initial_data['fecha_devolucion'] = self.request.GET.get('fecha_devolucion')
+        if self.request.GET.get('sucursal'):
+            try:
+                initial_data['sucursal'] = Sucursal.objects.get(id=self.request.GET.get('sucursal'))
+            except (Sucursal.DoesNotExist, ValueError):
+                pass
+        if self.request.GET.get('tipo'):
+            try:
+                initial_data['categoria'] = TipoVehiculo.objects.get(id=self.request.GET.get('tipo'))
+            except (TipoVehiculo.DoesNotExist, ValueError):
+                pass
+        if self.request.GET.get('capacidad'):
+            initial_data['capacidad'] = self.request.GET.get('capacidad')
+        if self.request.GET.get('kilometraje'):
+            initial_data['kilometraje'] = self.request.GET.get('kilometraje')
+        
+        # Pasar información de si es staff al formulario
+        context['busqueda_form'] = BusquedaVehiculoForm(
+            initial=initial_data, 
+            is_staff=self.request.user.is_staff
+        )
+        
+        # Información de búsqueda activa
+        context['busqueda_activa'] = bool(
+            self.request.GET.get('fecha_entrega') or 
+            self.request.GET.get('fecha_devolucion') or
+            self.request.GET.get('sucursal') or
+            self.request.GET.get('tipo') or
+            self.request.GET.get('capacidad') or
+            self.request.GET.get('kilometraje') or
+            self.request.GET.get('disponible')
+        )
         
         # Estadísticas de estados
         stats = {'total': Vehiculo.objects.count()}
