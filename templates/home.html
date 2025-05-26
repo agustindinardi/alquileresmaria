@@ -98,7 +98,7 @@
             </div>
             
             <div class="col-md-6 d-flex align-items-end">
-                <button type="submit" class="btn btn-success btn-lg w-100">
+                <button type="submit" id="buscarBtn" class="btn btn-secondary btn-lg w-100" disabled>
                     <i class="fas fa-search me-2"></i>Buscar Vehículos
                 </button>
             </div>
@@ -193,7 +193,27 @@
 document.addEventListener('DOMContentLoaded', function() {
     const fechaEntrega = document.querySelector('input[name="fecha_entrega"]');
     const fechaDevolucion = document.querySelector('input[name="fecha_devolucion"]');
+    const buscarBtn = document.getElementById('buscarBtn');
     
+    // Función para validar fechas y habilitar/deshabilitar botón
+    function validarFormulario() {
+        // Para TODOS los usuarios en el home, validar campos obligatorios
+        const fechaEntregaValida = fechaEntrega.value && fechaEntrega.value.trim() !== '';
+        const fechaDevolucionValida = fechaDevolucion.value && fechaDevolucion.value.trim() !== '';
+        
+        // Habilitar botón solo si ambas fechas están completas
+        if (fechaEntregaValida && fechaDevolucionValida) {
+            buscarBtn.disabled = false;
+            buscarBtn.classList.remove('btn-secondary');
+            buscarBtn.classList.add('btn-success');
+        } else {
+            buscarBtn.disabled = true;
+            buscarBtn.classList.remove('btn-success');
+            buscarBtn.classList.add('btn-secondary');
+        }
+    }
+    
+    // Configurar validación de fechas
     if (fechaEntrega && fechaDevolucion) {
         fechaEntrega.addEventListener('change', function() {
             if (this.value) {
@@ -207,7 +227,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     fechaDevolucion.value = '';
                 }
             }
+            validarFormulario();
         });
+        
+        fechaDevolucion.addEventListener('change', validarFormulario);
+        
+        // Validar al cargar la página
+        validarFormulario();
     }
 });
 </script>
