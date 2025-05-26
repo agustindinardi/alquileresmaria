@@ -23,4 +23,22 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const emailInput = document.querySelector('input[name="email"]');
+    const submitButton = document.querySelector('button[type="submit"]');
+
+    function toggleButton() {
+        submitButton.disabled = !emailInput.value.trim();
+    }
+
+    // Verificar inicialmente
+    toggleButton();
+
+    // Verificar cuando el usuario escribe
+    emailInput.addEventListener('input', toggleButton);
+});
+</script>
+
 {% endblock %}
