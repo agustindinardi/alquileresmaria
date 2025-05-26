@@ -61,4 +61,21 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const emailInput = document.querySelector('input[name="{{ form.username.html_name }}"]');
+    const passwordInput = document.querySelector('input[name="{{ form.password.html_name }}"]');
+    const submitButton = document.querySelector('button[type="submit"]');
+
+    function toggleButton() {
+        submitButton.disabled = !(emailInput.value.trim() && passwordInput.value.trim());
+    }
+
+    toggleButton();  // Verifica al cargar la página
+    emailInput.addEventListener('input', toggleButton);
+    passwordInput.addEventListener('input', toggleButton);
+});
+</script>
+
 {% endblock %}
