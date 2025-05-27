@@ -23,12 +23,16 @@ class Reserva(models.Model):
     estado = models.ForeignKey(EstadoReserva, on_delete=models.CASCADE)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
+    dni_conductor = models.CharField(max_length=10, unique=True, null=True)
     motivo_cancelacion = models.TextField(blank=True, null=True)
     
     def __str__(self):
         return f"Reserva de {self.vehiculo} por {self.usuario.username} ({self.fecha_inicio} - {self.fecha_fin})"
     
     def clean(self):
+        if self.fecha_inicio is None or self.fecha_fin is None:
+            raise ValidationError("Ambas fechas deben estar completas.")
+        
         # Validar que la fecha de inicio sea posterior a la fecha actual
         if self.fecha_inicio < timezone.now().date():
             raise ValidationError("La fecha de inicio debe ser posterior a la fecha actual.")
@@ -48,6 +52,23 @@ class Reserva(models.Model):
             for reserva in reservas_existentes:
                 if (self.fecha_inicio <= reserva.fecha_fin and self.fecha_fin >= reserva.fecha_inicio):
                     raise ValidationError(f"El vehiculo ya esta reservado en el periodo seleccionado. Reserva conflictiva: {reserva}")
+                
+                
+        if hasattr(self, 'dni_conductor') and self.dni_conductor:
+            reservas_dni = Reserva.objects.filter(
+                dni_conductor=self.dni_conductor,
+                estado__nombre='Confirmada'
+            ).exclude(id=self.id)  # Excluir la reserva actual (para ediciones)
+            
+            for reserva in reservas_dni:
+                if (self.fecha_inicio <= reserva.fecha_fin and self.fecha_fin >= reserva.fecha_inicio):
+                    raise ValidationError(
+                        f"El DNI {self.dni_conductor} ya tiene una reserva activa del "
+                        f"{reserva.fecha_inicio.strftime('%d/%m/%Y')} al "
+                        f"{reserva.fecha_fin.strftime('%d/%m/%Y')} "
+                        f"para el vehículo {reserva.vehiculo.marca} {reserva.vehiculo.modelo}. "
+                        f"No se pueden tener dos vehículos alquilados simultáneamente."
+                    )
     
     def save(self, *args, **kwargs):
         self.clean()

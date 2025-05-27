@@ -56,7 +56,7 @@ class Estado(models.Model):
         verbose_name_plural = "Estados"
 
 class Vehiculo(models.Model):
-    marca = models.ForeignKey(Marca, on_delete=models.CASCADE)
+    marca = models.CharField(max_length=100)
     modelo = models.CharField(max_length=100)
     tipo = models.ForeignKey(TipoVehiculo, on_delete=models.CASCADE)
     ano = models.PositiveIntegerField()

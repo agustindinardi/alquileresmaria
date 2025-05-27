@@ -6,7 +6,7 @@
 
 {% block content %}
 
-<div class="container py-5"> <div class="row justify-content-center"> <div class="col-md-8"> <div class="card shadow"> <div class="card-header bg-primary text-white"> <h3 class="mb-0"> {% if form.instance.id %} Editar Vehículo: {{ form.instance.marca }} {{ form.instance.modelo }} {% else %} Registrar Nuevo Vehículo {% endif %} </h3> </div> <div class="card-body"> <form method="post" enctype="multipart/form-data" novalidate> {% csrf_token %}
+<div class="container py-5"> <div class="row justify-content-center"> <div class="col-md-8"> <div class="card shadow"> <div class="card-header bg-primary text-white"> <h3 class="mb-0"> {% if form.instance.id %} Editar Vehículo: {{ form.instance.marca }} {{ form.instance.modelo }} {% else %} Registrar Nuevo Vehículo {% endif %} </h3> </div> <div class="card-body"> <form method="post" enctype="multipart/form-data" novalidate id="vehiculoForm"> {% csrf_token %}
                     {% if form.non_field_errors %}
                         <div class="alert alert-danger">
                             {% for error in form.non_field_errors %}
@@ -21,7 +21,7 @@
                             <!-- Marca -->
                             <div class="mb-3">
                                 <label for="{{ form.marca.id_for_label }}" class="form-label">{{ form.marca.label }}{% if form.marca.field.required %}*{% endif %}</label>
-                                {{ form.marca|add_class:"form-select" }}
+                                {{ form.marca|add_class:"form-control campo-obligatorio" }}
                                 {% if form.marca.errors %}
                                     <div class="text-danger small">{{ form.marca.errors }}</div>
                                 {% endif %}
@@ -33,7 +33,7 @@
                             <!-- Tipo -->
                             <div class="mb-3">
                                 <label for="{{ form.tipo.id_for_label }}" class="form-label">{{ form.tipo.label }}{% if form.tipo.field.required %}*{% endif %}</label>
-                                {{ form.tipo|add_class:"form-select" }}
+                                {{ form.tipo|add_class:"form-select campo-obligatorio" }}
                                 {% if form.tipo.errors %}
                                     <div class="text-danger small">{{ form.tipo.errors }}</div>
                                 {% endif %}
@@ -45,7 +45,7 @@
                             <!-- Modelo -->
                             <div class="mb-3">
                                 <label for="{{ form.modelo.id_for_label }}" class="form-label">{{ form.modelo.label }}{% if form.modelo.field.required %}*{% endif %}</label>
-                                {{ form.modelo|add_class:"form-control" }}
+                                {{ form.modelo|add_class:"form-control campo-obligatorio" }}
                                 {% if form.modelo.errors %}
                                     <div class="text-danger small">{{ form.modelo.errors }}</div>
                                 {% endif %}
@@ -57,7 +57,7 @@
                             <!-- Año -->
                             <div class="mb-3">
                                 <label for="{{ form.ano.id_for_label }}" class="form-label">{{ form.ano.label }}{% if form.ano.field.required %}*{% endif %}</label>
-                                {{ form.ano|add_class:"form-control" }}
+                                {{ form.ano|add_class:"form-control campo-obligatorio" }}
                                 {% if form.ano.errors %}
                                     <div class="text-danger small">{{ form.ano.errors }}</div>
                                 {% endif %}
@@ -69,7 +69,7 @@
                             <!-- Patente -->
                             <div class="mb-3">
                                 <label for="{{ form.patente.id_for_label }}" class="form-label">{{ form.patente.label }}{% if form.patente.field.required %}*{% endif %}</label>
-                                {{ form.patente|add_class:"form-control" }}
+                                {{ form.patente|add_class:"form-control campo-obligatorio" }}
                                 {% if form.patente.errors %}
                                     <div class="text-danger small">{{ form.patente.errors }}</div>
                                 {% endif %}
@@ -84,7 +84,7 @@
                             <!-- Capacidad -->
                             <div class="mb-3">
                                 <label for="{{ form.capacidad.id_for_label }}" class="form-label">{{ form.capacidad.label }}{% if form.capacidad.field.required %}*{% endif %}</label>
-                                {{ form.capacidad|add_class:"form-control" }}
+                                {{ form.capacidad|add_class:"form-control campo-obligatorio" }}
                                 {% if form.capacidad.errors %}
                                     <div class="text-danger small">{{ form.capacidad.errors }}</div>
                                 {% endif %}
@@ -98,7 +98,7 @@
                                 <label for="{{ form.precio_por_dia.id_for_label }}" class="form-label">{{ form.precio_por_dia.label }}{% if form.precio_por_dia.field.required %}*{% endif %}</label>
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    {{ form.precio_por_dia|add_class:"form-control" }}
+                                    {{ form.precio_por_dia|add_class:"form-control campo-obligatorio" }}
                                 </div>
                                 {% if form.precio_por_dia.errors %}
                                     <div class="text-danger small">{{ form.precio_por_dia.errors }}</div>
@@ -112,7 +112,7 @@
                             <div class="mb-3">
                                 <label for="{{ form.kilometraje.id_for_label }}" class="form-label">{{ form.kilometraje.label }}{% if form.kilometraje.field.required %}*{% endif %}</label>
                                 <div class="input-group">
-                                    {{ form.kilometraje|add_class:"form-control" }}
+                                    {{ form.kilometraje|add_class:"form-control campo-obligatorio" }}
                                     <span class="input-group-text">km</span>
                                 </div>
                                 {% if form.kilometraje.errors %}
@@ -138,7 +138,7 @@
                             <!-- Sucursal -->
                             <div class="mb-3">
                                 <label for="{{ form.sucursal.id_for_label }}" class="form-label">{{ form.sucursal.label }}{% if form.sucursal.field.required %}*{% endif %}</label>
-                                {{ form.sucursal|add_class:"form-select" }}
+                                {{ form.sucursal|add_class:"form-select campo-obligatorio" }}
                                 {% if form.sucursal.errors %}
                                     <div class="text-danger small">{{ form.sucursal.errors }}</div>
                                 {% endif %}
@@ -191,7 +191,7 @@
 
                     <div class="d-flex justify-content-between mt-4">
                         <a href="{% url 'vehiculos:lista' %}" class="btn btn-secondary">Cancelar</a>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
                             {% if form.instance.id %}Actualizar{% else %}Registrar{% endif %} Vehículo
                         </button>
                     </div>
@@ -200,4 +200,54 @@
         </div>
     </div>
 </div>
-</div> {% endblock %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('vehiculoForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const camposObligatorios = document.querySelectorAll('.campo-obligatorio');
+    
+    function validarFormulario() {
+        let todosCompletos = true;
+        
+        camposObligatorios.forEach(function(campo) {
+            if (campo.type === 'select-one') {
+                // Para campos select, verificar que no esté vacío o sea el valor por defecto
+                if (!campo.value || campo.value === '' || campo.value === '---------') {
+                    todosCompletos = false;
+                }
+            } else {
+                // Para campos de texto, verificar que no esté vacío
+                if (!campo.value.trim()) {
+                    todosCompletos = false;
+                }
+            }
+        });
+        
+        // Habilitar o deshabilitar el botón según la validación
+        submitBtn.disabled = !todosCompletos;
+        
+        // Cambiar el estilo visual del botón
+        if (todosCompletos) {
+            submitBtn.classList.remove('btn-secondary');
+            submitBtn.classList.add('btn-primary');
+        } else {
+            submitBtn.classList.remove('btn-primary');
+            submitBtn.classList.add('btn-secondary');
+        }
+    }
+    
+    // Validar inicialmente
+    validarFormulario();
+    
+    // Agregar event listeners a todos los campos obligatorios
+    camposObligatorios.forEach(function(campo) {
+        campo.addEventListener('input', validarFormulario);
+        campo.addEventListener('change', validarFormulario);
+        campo.addEventListener('blur', validarFormulario);
+    });
+});
+</script>
+
+{% endblock %}

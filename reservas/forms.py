@@ -4,6 +4,11 @@ from django.utils import timezone
 
 class ReservaForm(forms.ModelForm):
 
+    dni_conductor = forms.CharField(
+        label="DNI del conductor",
+        max_length=10,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
     numero_tarjeta = forms.CharField(
         label="Número de Tarjeta",
         max_length=16,
@@ -21,10 +26,11 @@ class ReservaForm(forms.ModelForm):
 
     class Meta:
         model = Reserva
-        fields = ['fecha_inicio', 'fecha_fin']
+        fields = ['fecha_inicio', 'fecha_fin', 'dni_conductor']
         widgets = {
             'fecha_inicio': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'fecha_fin': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'dni_conductor': forms.TextInput(attrs={'class': 'form-control'})
         }
     
     def __init__(self, *args, **kwargs):
@@ -36,6 +42,7 @@ class ReservaForm(forms.ModelForm):
         cleaned_data = super().clean()
         fecha_inicio = cleaned_data.get('fecha_inicio')
         fecha_fin = cleaned_data.get('fecha_fin')
+        dni_conductor = cleaned_data.get('dni_conductor')
         numero_tarjeta = cleaned_data.get('numero_tarjeta')
         pin_tarjeta = cleaned_data.get('pin_tarjeta')
         vencimiento_input = cleaned_data.get('vencimiento_tarjeta')

@@ -99,12 +99,6 @@ for tipo in tipos_vehiculo:
     TipoVehiculo.objects.get_or_create(nombre=tipo)
 print("Tipos de vehiculo creados")
 
-# Crear marcas
-marcas = ['Toyota', 'Ford', 'Chevrolet', 'Volkswagen', 'Honda', 'Nissan', 'Renault', 'Fiat']
-for marca in marcas:
-    Marca.objects.get_or_create(nombre=marca)
-print("Marcas creadas")
-
 # Crear superusuario si no existe
 if not User.objects.filter(username='admin').exists():
     user = User.objects.create_superuser('admin', 'admin@example.com', 'admin123')
@@ -155,27 +149,12 @@ vehiculos = [
         'descripcion': 'Chevrolet S10 4x4. Ideal para terrenos difíciles y carga.',
         'sucursal': 'Sucursal Central',
         'estado': 'Reservado'
-    },
-    {
-        'marca': 'Honda',
-        'modelo': 'Civic',
-        'tipo': 'Sedan',
-        'ano': 2019,
-        'patente': 'JKL012',
-        'capacidad': 5,
-        'precio_por_dia': Decimal('45.00'),
-        'kilometraje': 42000,
-        'politica_reembolso': 'Reembolso Completo',
-        'descripcion': 'Honda Civic deportivo y económico. Excelente rendimiento de combustible.',
-        'sucursal': 'Sucursal Sur',
-        'estado': 'Mantenimiento'
     }
 ]
 
 vehiculos_creados = 0
 for v in vehiculos:
     try:
-        marca = Marca.objects.get(nombre=v['marca'])
         tipo = TipoVehiculo.objects.get(nombre=v['tipo'])
         politica = PoliticaReembolso.objects.get(nombre=v['politica_reembolso'])
         sucursal = Sucursal.objects.get(nombre=v['sucursal'])
@@ -184,7 +163,7 @@ for v in vehiculos:
         vehiculo, created = Vehiculo.objects.get_or_create(
             patente=v['patente'],
             defaults={
-                'marca': marca,
+                'marca': v['marca'],
                 'modelo': v['modelo'],
                 'tipo': tipo,
                 'ano': v['ano'],

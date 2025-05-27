@@ -57,7 +57,9 @@ def crear_reserva(request, vehiculo_id):
                         vehiculo=vehiculo,
                         usuario=request.user,
                         fecha_inicio=form.cleaned_data['fecha_inicio'],
-                        fecha_fin=form.cleaned_data['fecha_fin']
+                        fecha_fin=form.cleaned_data['fecha_fin'],
+                        dni_conductor=form.cleaned_data['dni_conductor']
+
                     )
                     
                     # Obtener el estado "Confirmada" para la reserva

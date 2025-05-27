@@ -406,6 +406,7 @@ document.addEventListener('DOMContentLoaded', function() {
     fechaEntregaDisplay.addEventListener('click', function() {
         selectedInput = 'entrega';
         minDate = new Date();
+        minDate.setHours(0, 0, 0, 0);
         maxDate = null;
         
         if (fechaInicioHidden.value) {
