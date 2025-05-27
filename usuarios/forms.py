@@ -9,13 +9,13 @@ from datetime import date
 class UserForm(UserCreationForm):
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email']
+        fields = ['first_name', 'last_name', 'email']
 
-    def clean_username(self):
-        username = self.cleaned_data.get('username')
-        if User.objects.filter(username=username).exists():
-            raise forms.ValidationError("Este nombre de usuario ya está registrado.")
-        return username
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs['class'] = 'form-control'
+            field.widget.attrs['required'] = 'required'
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -28,12 +28,27 @@ class UserForm(UserCreationForm):
         if len(password) > 8:
             raise forms.ValidationError("La contraseña no puede tener más de 8 caracteres.")
         return password
+
+    def save(self, commit=True):    # De esta forma tomamos el email como username
+        user = super().save(commit=False)
+        email = self.cleaned_data.get('email')
+        # Generamos un username basado en el email (único)
+        user.username = email
+        if commit:
+            user.save()
+        return user
     
 # Formulario para el perfil de usuario 
 class PerfilForm(forms.ModelForm):
     class Meta:
         model = Perfil
         fields = ['dni', 'fecha_nacimiento', 'telefono']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs['class'] = 'form-control'
+            field.widget.attrs['required'] = 'required'
 
     def clean_fecha_nacimiento(self):
         fecha_nacimiento = self.cleaned_data.get('fecha_nacimiento')

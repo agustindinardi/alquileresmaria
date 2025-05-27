@@ -18,7 +18,7 @@ def registro(request):
             perfil = perfil_form.save(commit=False)
             perfil.usuario = user   # Asignar el usuario al perfil
             perfil.save()
-            messages.success(request, f"¡Cuenta creada exitosamente! Bienvenido/a, {user.username}. Utiliza tus credenciales para autenticarte")
+            messages.success(request, f"¡Cuenta creada exitosamente! Bienvenido/a, {user.first_name} {user.last_name}. Utiliza tus credenciales para autenticarte")
             return redirect('home')
     else:
         user_form = UserForm()
@@ -35,7 +35,7 @@ def iniciar_sesion(request):
             user = authenticate(request, username=email, password=password)
             if user is not None:
                 login(request, user)
-                messages.success(request, f"¡Bienvenido/a, {user.username}!")
+                messages.success(request, f"¡Bienvenido/a, {user.first_name} {user.last_name}!")
                 return redirect('home')
             else:
                 messages.error(request, "Correo o contraseña incorrectos.")
