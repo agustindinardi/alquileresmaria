@@ -43,12 +43,21 @@ class PerfilForm(forms.ModelForm):
     class Meta:
         model = Perfil
         fields = ['dni', 'fecha_nacimiento', 'telefono']
+        widgets = {
+            'fecha_nacimiento': forms.DateInput(
+                format='%d-%m-%Y',
+                attrs={'type': 'date', 'max': date.today().isoformat()}
+            )
+        }
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs['class'] = 'form-control'
             field.widget.attrs['required'] = 'required'
+            self.fields['fecha_nacimiento'].input_formats = ['%Y-%m-%d']
+
 
     def clean_fecha_nacimiento(self):
         fecha_nacimiento = self.cleaned_data.get('fecha_nacimiento')
