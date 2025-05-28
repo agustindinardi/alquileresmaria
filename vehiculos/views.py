@@ -324,18 +324,19 @@ class VehiculoDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         """Comprobar si el usuario tiene permisos para eliminar vehículos."""
         return self.request.user.is_staff
 
-    def delete(self, request, *args, **kwargs):
+    # def delete(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         """Personalizar el proceso de eliminación."""
         vehiculo = self.get_object()
-        
+
         # Verificar si el vehículo está reservado
-        if vehiculo.esta_reservado():
+        if vehiculo.esta_reservado():   # jeje ta bien
             messages.error(
                 request, 
                 f'No se puede eliminar el vehículo {vehiculo.marca} {vehiculo.modelo} '
                 f'porque está actualmente reservado.'
             )
-            return HttpResponseRedirect(reverse('vehiculos:detalle', kwargs={'pk': vehiculo.pk}))
+            return redirect('/vehiculos/')
         
         estado_display = vehiculo.estado.nombre if vehiculo.estado else 'Sin estado'
         messages.success(
