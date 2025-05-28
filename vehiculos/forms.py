@@ -90,6 +90,18 @@ class BusquedaVehiculoForm(forms.Form):
         required=True  # Se modificará en __init__ según el usuario
     )
     
+    # CAMBIO: Nuevo campo para búsqueda de marca por texto
+    marca_texto = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ej: Toyota, Ford, Chevrolet...'
+        }),
+        label='Marca',
+        required=False,
+        help_text='Ingrese el nombre de la marca para buscar'
+    )
+    
     sucursal = forms.ModelChoiceField(
         queryset=Sucursal.objects.all(),
         empty_label='Todas las sucursales',
@@ -143,6 +155,14 @@ class BusquedaVehiculoForm(forms.Form):
             
             # Remover la fecha mínima para administradores
             self.fields['fecha_entrega'].widget.attrs.pop('min', None)
+    
+    def clean_marca_texto(self):
+        """Limpiar y validar el campo de marca."""
+        marca = self.cleaned_data.get('marca_texto')
+        if marca:
+            # Limpiar espacios y convertir a formato título
+            marca = marca.strip().title()
+        return marca
     
     def clean(self):
         cleaned_data = super().clean()

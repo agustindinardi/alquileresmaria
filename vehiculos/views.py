@@ -126,10 +126,11 @@ class VehiculoListView(ListView):
             except Estado.DoesNotExist:
                 pass
             
-        # Filtrar por marca (si se especifica en la URL)
-        marca_id = self.request.GET.get('marca')
-        if marca_id:
-            queryset = queryset.filter(marca_id=marca_id)
+        # CAMBIO: Filtrar por marca usando búsqueda de texto en el campo marca del vehículo
+        marca_texto = self.request.GET.get('marca')
+        if marca_texto and marca_texto.strip():
+            # Búsqueda insensible a mayúsculas y minúsculas que contenga el texto
+            queryset = queryset.filter(marca__icontains=marca_texto.strip())
             
         # Filtrar por tipo/categoría (si se especifica en la URL)
         tipo_id = self.request.GET.get('tipo')
@@ -162,7 +163,8 @@ class VehiculoListView(ListView):
     def get_context_data(self, **kwargs):
         """Añadir datos adicionales al contexto."""
         context = super().get_context_data(**kwargs)
-        context['marcas'] = Marca.objects.all()
+        # CAMBIO: Ya no necesitamos pasar las marcas del modelo Marca
+        # context['marcas'] = Marca.objects.all()  # Comentado o eliminado
         context['tipos'] = TipoVehiculo.objects.all()
         context['sucursales'] = Sucursal.objects.all()
         context['estados'] = Estado.objects.all()
@@ -187,6 +189,9 @@ class VehiculoListView(ListView):
             initial_data['capacidad'] = self.request.GET.get('capacidad')
         if self.request.GET.get('kilometraje'):
             initial_data['kilometraje'] = self.request.GET.get('kilometraje')
+        # CAMBIO: Agregar el valor de marca como texto
+        if self.request.GET.get('marca'):
+            initial_data['marca_texto'] = self.request.GET.get('marca')
         
         # Pasar información de si es staff al formulario
         context['busqueda_form'] = BusquedaVehiculoForm(
@@ -202,6 +207,7 @@ class VehiculoListView(ListView):
             self.request.GET.get('tipo') or
             self.request.GET.get('capacidad') or
             self.request.GET.get('kilometraje') or
+            self.request.GET.get('marca') or  # CAMBIO: Incluir marca en búsqueda activa
             self.request.GET.get('disponible')
         )
         
@@ -344,4 +350,3 @@ class VehiculoDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
             f'El vehículo {vehiculo.marca} {vehiculo.modelo} ({estado_display}) ha sido eliminado.'
         )
         return super().delete(request, *args, **kwargs)
-
