@@ -50,14 +50,12 @@ class PerfilForm(forms.ModelForm):
             )
         }
 
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs['class'] = 'form-control'
             field.widget.attrs['required'] = 'required'
             self.fields['fecha_nacimiento'].input_formats = ['%Y-%m-%d']
-
 
     def clean_fecha_nacimiento(self):
         fecha_nacimiento = self.cleaned_data.get('fecha_nacimiento')
@@ -69,7 +67,6 @@ class PerfilForm(forms.ModelForm):
             raise forms.ValidationError("Debes ser mayor de 18 años para registrarte.")
         return fecha_nacimiento
       
-     
     def clean_dni(self):
         dni = self.cleaned_data.get('dni')
         if Perfil.objects.filter(dni=dni).exists():
@@ -92,3 +89,27 @@ class RecuperarContrasenaForm(forms.Form):
             'required': 'required'
         })
     )
+
+#Formulario para validar código de seguridad
+class CodigoValidacionForm(forms.Form):
+    codigo = forms.CharField(
+        label="Código de Seguridad",
+        max_length=6,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ej: 1234-A',
+            'required': 'required',
+            'pattern': '[0-9]{4}-[A-Z]',
+            'title': 'Formato: 1234-A'
+        })
+    )
+    
+    def clean_codigo(self):
+        codigo = self.cleaned_data.get('codigo')
+        if codigo:
+            codigo = codigo.upper().strip()
+            # Validar formato XXXX-X
+            import re
+            if not re.match(r'^\d{4}-[A-Z]$', codigo):
+                raise forms.ValidationError("El código debe tener el formato 1234-A")
+        return codigo
