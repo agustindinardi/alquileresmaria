@@ -101,7 +101,7 @@ print("Tipos de vehiculo creados")
 
 # Crear superusuario si no existe
 if not User.objects.filter(username='admin').exists():
-    user = User.objects.create_superuser('admin', 'admin@example.com', 'admin123')
+    user = User.objects.create_superuser('admin', 'alquileresmaria4@gmail.com', 'admin123')
     user.last_login = user.date_joined  # Asignamos la fecha de creación como last_login
     user.save()
     print("Superusuario creado")

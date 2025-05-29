@@ -9,5 +9,6 @@ urlpatterns = [
     path('logout/', views.cerrar_sesion, name='logout'),
     path('perfil/', views.perfil, name='perfil'),
     path('recuperar-contrasena/', views.recuperar_contrasena, name='recuperar_contrasena'),
+    path('validar-codigo/', views.validar_codigo, name='validar_codigo'),
 
 ]
