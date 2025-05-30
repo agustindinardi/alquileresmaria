@@ -29,6 +29,11 @@
                         {% endif %}
                         <li class="list-group-item"><i class="fas fa-gauge me-2"></i>{{ vehiculo.kilometraje }} km</li>
                         <li class="list-group-item"><strong>Patente:</strong> {{ vehiculo.patente }}</li>
+
+                        <li class="list-group-item" id="datosReserva" data-precio="{{ vehiculo.precio_por_dia|default:0|floatformat:2 }}">
+                            <strong>Total a pagar: </strong><i class="fas fa-dollar-sign me-2"></i><span id="totalAPagar">0</span>
+                        </li>
+
                         <li class="list-group-item"><strong>Reembolso:</strong> {{ vehiculo.politica_reembolso }}</li>
                         <li class="list-group-item"><strong>Descripción:</strong>
                             {% if vehiculo.descripcion %}
@@ -62,7 +67,7 @@
                         <div class="mb-3">
                             <label for="fecha_entrega_display" class="form-label">Fecha de entrega</label>
                             <input type="text" id="fecha_entrega_display" class="form-control" placeholder="DD/MM/YYYY" readonly>
-                            <input type="date" name="fecha_inicio" id="id_fecha_inicio" style="display: none;" required>
+                            <input type="date" name="fecha_inicio" id="id_fecha_inicio" hidden>
                             {% for err in form.fecha_inicio.errors %}
                                 <div class="text-danger small">{{ err }}</div>
                             {% endfor %}
@@ -73,7 +78,7 @@
                         <div class="mb-3">
                             <label for="fecha_devolucion_display" class="form-label">Fecha de devolución</label>
                             <input type="text" id="fecha_devolucion_display" class="form-control" placeholder="DD/MM/YYYY" readonly>
-                            <input type="date" name="fecha_fin" id="id_fecha_fin" style="display: none;" required>
+                            <input type="date" name="fecha_fin" id="id_fecha_fin" hidden>
                             {% for err in form.fecha_fin.errors %}
                                 <div class="text-danger small">{{ err }}</div>
                             {% endfor %}
@@ -260,7 +265,49 @@ document.addEventListener('DOMContentLoaded', function() {
     const fechaDevolucionDisplay = document.getElementById('fecha_devolucion_display');
     const fechaInicioHidden = document.getElementById('id_fecha_inicio');
     const fechaFinHidden = document.getElementById('id_fecha_fin');
+    const totalAPagar = document.getElementById("totalAPagar");
+    const precioPorDia = parseFloat(document.getElementById("datosReserva").dataset.precio.replace(',', '.'));
+    console.log("Precio por día (dataset):", precioPorDia);
+    console.log("fechaDesde:", fechaInicioHidden.value);
+    console.log("fechaHasta:", fechaFinHidden.value);
     
+
+
+   /* const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0); // Quitar hora para comparar correctamente
+    const maxEntrega = new Date(hoy);
+    maxEntrega.setDate(hoy.getDate() + 14); // Máximo 14 días desde hoy
+
+    // Aplicar min y max a fecha de entrega
+    fechaInicioHidden.min = formatoISO(hoy.toLocaleDateString('es-AR'));
+
+    // Al cambiar fecha de entrega, actualizar límites de devolución
+    fechaInicioHidden.addEventListener('change', function () {
+        if (fechaInicioHidden.value) {
+            const fechaEntrega = new Date(fechaInicioHidden.value);
+            const minDevolucion = new Date(fechaEntrega);
+            minDevolucion.setDate(minDevolucion.getDate() + 1);
+
+            const maxDevolucion = new Date(fechaEntrega);
+            maxDevolucion.setDate(maxDevolucion.getDate() + 14);
+
+            fechaFinHidden.min = formatoISO(minDevolucion.toLocaleDateString('es-AR'));
+            fechaFinHidden.max = formatoISO(maxDevolucion.toLocaleDateString('es-AR'));
+
+            // Borrar fecha de devolución si quedó fuera del nuevo rango
+            if (fechaFinHidden.value) {
+                const fechaDev = new Date(fechaFinHidden.value);
+                if (fechaDev < minDevolucion || fechaDev > maxDevolucion) {
+                    fechaFinHidden.value = '';
+                }
+            }
+        }
+        calcular_Total();
+    });*/
+
+    // Cuando se cambia el campo oculto, se actualiza el campo visible
+    
+
     // Función para convertir fecha de YYYY-MM-DD a DD/MM/YYYY
     function formatoArgentino(fechaISO) {
         if (!fechaISO) return '';
@@ -274,6 +321,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const [dia, mes, año] = fechaArgentina.split('/');
         return `${año}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
     }
+
+    function calcular_Total(){
+        const inicio = new Date(fechaInicioHidden.value);
+        const fin = new Date(fechaFinHidden.value);
+        console.log("Inicio:", inicio, "Fin:", fin);
+        console.log("Precio por día (parseado):", precioPorDia);
+
+
+        if (fechaInicioHidden.value && fechaFinHidden.value && fin >= inicio && !isNaN(precioPorDia)) {
+            const diffTime = Math.abs(fin - inicio);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 || 1;
+            const total = diffDays * precioPorDia;
+            console.log("Días:", diffDays, "Total:", total);
+            totalAPagar.innerText = `$${total.toFixed(2)}`;
+        } else {
+            totalAPagar.textContent = "0";
+        }
+    }
+
+    fechaInicioHidden.addEventListener("change", calcular_Total);
+    fechaFinHidden.addEventListener("change", calcular_Total);
     
     // Función para crear el calendario
     function crearCalendario(año, mes) {
@@ -281,6 +349,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const ultimoDia = new Date(año, mes + 1, 0);
         const diasMesAnterior = new Date(año, mes, 0).getDate();
         const primerDiaSemana = primerDia.getDay();
+        
+
         
         const meses = [
             'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -380,6 +450,7 @@ document.addEventListener('DOMContentLoaded', function() {
             fechaFinHidden.value = fechaISO;
             fechaDevolucionDisplay.value = fechaDisplay;
         }
+        calcular_Total();
         
         // Cerrar modal
         const modal = bootstrap.Modal.getInstance(document.getElementById('dateModal'));
@@ -408,7 +479,7 @@ document.addEventListener('DOMContentLoaded', function() {
         minDate = new Date();
         minDate.setHours(0, 0, 0, 0);
         maxDate = null;
-        
+
         if (fechaInicioHidden.value) {
             const fecha = new Date(fechaInicioHidden.value);
             currentDate = new Date(fecha.getFullYear(), fecha.getMonth(), 1);
@@ -425,7 +496,7 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Primero debe seleccionar la fecha de entrega');
             return;
         }
-        
+
         selectedInput = 'devolucion';
         const fechaEntrega = new Date(fechaInicioHidden.value);
         minDate = new Date(fechaEntrega.getTime() + 24 * 60 * 60 * 1000); // Al día siguiente
