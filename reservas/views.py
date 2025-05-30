@@ -133,7 +133,7 @@ def cancelar_reserva(request, pk):
             if vehiculo.liberar():
                 messages.success(request, f"Reserva cancelada exitosamente. Vehículo {vehiculo.marca} {vehiculo.modelo} liberado.")
             else:
-                messages.warning(request, f"Reserva cancelada, pero no se pudo liberar automáticamente el vehículo {vehiculo.marca} {vehiculo.modelo}.")
+                messages.warning(request, f"Reserva cancelada exitosamente.")
                     
             return redirect('reservas:lista')
                     
