@@ -8,7 +8,9 @@ from django.urls import reverse
 from django.db import transaction
 from .models import Reserva, EstadoReserva
 from .forms import ReservaForm, CancelarReservaForm
-from vehiculos.models import Vehiculo, Estado
+from vehiculos.models import Vehiculo, Estado, PoliticaReembolso
+from reservas.models import Tarjeta
+from pagos.models import Pago
 from django.utils import timezone
 
 class ReservaListView(LoginRequiredMixin, ListView):
@@ -35,7 +37,9 @@ class ReservaDetailView(LoginRequiredMixin, DetailView):
         reserva = self.get_object()
         context['puede_cancelar'] = reserva.puede_cancelar_usuario()
         context['form_cancelar'] = CancelarReservaForm()
+        context['total_a_pagar'] = reserva.calcular_Total()
         return context
+    
 
 @login_required
 def crear_reserva(request, vehiculo_id):
@@ -58,8 +62,8 @@ def crear_reserva(request, vehiculo_id):
                         usuario=request.user,
                         fecha_inicio=form.cleaned_data['fecha_inicio'],
                         fecha_fin=form.cleaned_data['fecha_fin'],
-                        dni_conductor=form.cleaned_data['dni_conductor']
-
+                        dni_conductor=form.cleaned_data['dni_conductor'],
+                        tarjeta = Tarjeta.objects.get(numero=form.cleaned_data['numero_tarjeta'])
                     )
                     
                     # Obtener el estado "Confirmada" para la reserva
@@ -104,46 +108,51 @@ def cancelar_reserva(request, pk):
     # Verificar si la reserva puede ser cancelada por el usuario
     if not reserva.puede_cancelar_usuario():
         messages.error(request, "No es posible cancelar la reserva con menos de 24 horas de anticipación.")
-        return redirect('reservas:detalle', pk=reserva.id)
+        return redirect('reservas:lista')
     
-    if request.method == 'POST':
-        form = CancelarReservaForm(request.POST)
-        if form.is_valid():
+    try:
+        with transaction.atomic():
+            # Obtener el estado "Cancelada" para la reserva
             try:
-                with transaction.atomic():
-                    # Obtener el estado "Cancelada" para la reserva
-                    try:
-                        estado_cancelada = EstadoReserva.objects.get(nombre__iexact='cancelada')
-                    except EstadoReserva.DoesNotExist:
-                        # Si no existe, crearlo
-                        estado_cancelada, created = EstadoReserva.objects.get_or_create(
-                            nombre='Cancelada',
-                            defaults={'descripcion': 'Reserva cancelada por el usuario'}
-                        )
+                estado_cancelada = EstadoReserva.objects.get(nombre__iexact='cancelada')
+            except EstadoReserva.DoesNotExist:
+                # Si no existe, crearlo
+                estado_cancelada, created = EstadoReserva.objects.get_or_create(
+                    nombre='Cancelada',
+                    defaults={'descripcion': 'Reserva cancelada por el usuario'}
+                )
                     
-                    reserva.estado = estado_cancelada
-                    reserva.motivo_cancelacion = form.cleaned_data['motivo_cancelacion']
-                    reserva.save()
+            reserva.estado = estado_cancelada
+            reserva.motivo_cancelacion = 'Cancelada desde Lista'
+            reserva.save()
+
+            vehiculo = reserva.vehiculo
+            _Realizar_Reembolso(reserva, request)
+
+            # Liberar el vehículo usando el nuevo método
+            if vehiculo.liberar():
+                messages.success(request, f"Reserva cancelada exitosamente. Vehículo {vehiculo.marca} {vehiculo.modelo} liberado.")
+            else:
+                messages.warning(request, f"Reserva cancelada, pero no se pudo liberar automáticamente el vehículo {vehiculo.marca} {vehiculo.modelo}.")
                     
-                    # Liberar el vehículo usando el nuevo método
-                    vehiculo = reserva.vehiculo
-                    if vehiculo.liberar():
-                        messages.success(request, f"Reserva cancelada exitosamente. Vehículo {vehiculo.marca} {vehiculo.modelo} liberado.")
-                    else:
-                        messages.warning(request, f"Reserva cancelada, pero no se pudo liberar automáticamente el vehículo {vehiculo.marca} {vehiculo.modelo}.")
+            return redirect('reservas:lista')
                     
-                    return redirect('reservas:lista')
-                    
-            except Exception as e:
-                messages.error(request, f"Error al cancelar la reserva: {str(e)}")
-                return redirect('reservas:detalle', pk=reserva.id)
-    else:
-        form = CancelarReservaForm()
-    
-    return render(request, 'reservas/cancelar_reserva.html', {
-        'form': form,
-        'reserva': reserva
-    })
+    except Exception as e:
+        messages.error(request, f"Error al cancelar la reserva: {str(e)}")
+        return redirect('reservas:lista')
+    return redirect('reservas:lista')
+
+def _Realizar_Reembolso(reserva, request):
+ 
+    monto_reembolso = reserva.calcular_Reembolso()
+
+    # Obtener pago y tarjeta
+    tarjeta = reserva.tarjeta
+    tarjeta.saldo += monto_reembolso
+    tarjeta.save()   
+    messages.success(request, f"Se ha reembolsado ${monto_reembolso:.2f} a la tarjeta terminada en {tarjeta.numero[-4:]}")
+
+
 
 @login_required
 def admin_cancelar_reserva(request, pk):

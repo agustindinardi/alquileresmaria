@@ -15,20 +15,59 @@ class EstadoReserva(models.Model):
         verbose_name = "Estado de Reserva"
         verbose_name_plural = "Estados de Reservas"
 
+class Tarjeta(models.Model):
+    TIPO_CHOICES = [
+        ('debito', 'Débito'),
+        ('credito', 'Crédito'),
+    ]
+
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
+    numero = models.CharField(max_length=16, unique=True)
+    vencimiento = models.DateField()
+    pin = models.CharField(max_length=3)
+    saldo = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} - **** **** **** {self.numero[-4:]}"
+
+    class Meta:
+        verbose_name = "Tarjeta"
+        verbose_name_plural = "Tarjetas"
+
 class Reserva(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE)
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.CASCADE)
+    tarjeta = models.ForeignKey(Tarjeta, on_delete=models.CASCADE, null=True)
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
     estado = models.ForeignKey(EstadoReserva, on_delete=models.CASCADE)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
-    dni_conductor = models.CharField(max_length=10, unique=True, null=True)
+    dni_conductor = models.CharField(max_length=10, null=True)
     motivo_cancelacion = models.TextField(blank=True, null=True)
     
     def __str__(self):
         return f"Reserva de {self.vehiculo} por {self.usuario.username} ({self.fecha_inicio} - {self.fecha_fin})"
     
+
+    def calcular_Total(self):
+        # Calcular monto total de la reserva
+        if not self.fecha_inicio or not self.fecha_fin:
+            return None  
+        dias_reserva = (self.fecha_fin - self.fecha_inicio).days + 1
+        dias_reserva = max(1, dias_reserva)
+        return dias_reserva * self.vehiculo.precio_por_dia
+
+
+    def calcular_Reembolso(self):
+        monto_Total = self.calcular_Total()
+        # Calcular el reembolso
+        politica = self.vehiculo.politica_reembolso
+        porcentaje_reembolso = politica.porcentaje
+        return (monto_Total * porcentaje_reembolso) / 100
+
+
+
     def clean(self):
         if self.fecha_inicio is None or self.fecha_fin is None:
             raise ValidationError("Ambas fechas deben estar completas.")
@@ -46,7 +85,7 @@ class Reserva(models.Model):
         if hasattr(self, 'vehiculo') and self.vehiculo:
             reservas_existentes = Reserva.objects.filter(
                 vehiculo=self.vehiculo,
-                estado__nombre__in=['Cancelada', 'Confirmada'],
+                estado__nombre__in=['Confirmada'],
             ).exclude(id=self.id)
             
             for reserva in reservas_existentes:
@@ -74,10 +113,6 @@ class Reserva(models.Model):
         self.clean()
         super().save(*args, **kwargs)
     
-    def calcular_total(self):
-        """Calcula el costo total de la reserva"""
-        dias = (self.fecha_fin - self.fecha_inicio).days + 1
-        return dias * self.vehiculo.tarifa_diaria
     
     def puede_cancelar_usuario(self):
         """Verifica si el usuario puede cancelar la reserva (24 horas antes)"""
@@ -91,21 +126,3 @@ class Reserva(models.Model):
         verbose_name_plural = "Reservas"
         ordering = ['-fecha_creacion']
 
-class Tarjeta(models.Model):
-    TIPO_CHOICES = [
-        ('debito', 'Débito'),
-        ('credito', 'Crédito'),
-    ]
-
-    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
-    numero = models.CharField(max_length=16, unique=True)
-    vencimiento = models.DateField()
-    pin = models.CharField(max_length=3)
-    saldo = models.DecimalField(max_digits=10, decimal_places=2)
-
-    def __str__(self):
-        return f"{self.get_tipo_display()} - **** **** **** {self.numero[-4:]}"
-
-    class Meta:
-        verbose_name = "Tarjeta"
-        verbose_name_plural = "Tarjetas"
