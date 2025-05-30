@@ -3,6 +3,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    min-height: 200vh; /* Para que puedas hacer scroll */
 }
 
 .container {
@@ -54,6 +55,47 @@ body {
 /* Cambio navbar-dark bg-primary a bg-success */
 .navbar.navbar-dark.bg-primary {
     background-color: #198754 !important;
+}
+
+.Title-pag{
+    color: #1d1c1c;
+    font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    font-size: 22px;
+    padding-right: 10px;
+    border-radius: 6px;
+}
+.Title-pag:hover{
+    text-decoration: underline;
+    color: #1d1c1c;
+}
+
+.nav-link{
+    font-size: 18px;
+    color: #ffffff;
+    margin-left: 5px;
+}
+
+.Info-Home{
+    background: linear-gradient(#373737, #12462d);
+    box-shadow: 0px 0px 10px #146c43;
+}
+.card-title1{
+    text-decoration: underline;
+    color: #5ec293;
+}
+.card-text1{
+    color: #8dc9ad;
+}
+
+.ComoFun-info{
+    background: linear-gradient(#d2d2d2 ,#373737 );
+}
+.card-title2{
+    text-decoration: underline;
+    color: #0b482c;
+}
+.card-text2{
+    color: #ffffff;
 }
 
 /* Estilos para el footer */
