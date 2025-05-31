@@ -78,8 +78,12 @@ def crear_reserva(request, vehiculo_id):
                         )
                         reserva.estado = estado_confirmada
                     
+
                     reserva.save()
-                    
+                    # Descontar saldo de la tarjeta validada solo si la reserva se creó exitosamente
+                    tarjeta = form.tarjeta_validada
+                    tarjeta.saldo -= form.total_a_cobrar
+                    tarjeta.save()
                     # Cambiar el estado del vehículo a reservado
                     if vehiculo.reservar():
                         messages.success(request, f"Reserva creada exitosamente. Vehículo {vehiculo.marca} {vehiculo.modelo} reservado.")

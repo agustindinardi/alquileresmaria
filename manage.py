@@ -11,6 +11,8 @@ from reservas.models import EstadoReserva
 from pagos.models import MetodoPago
 from reservas.models import Tarjeta
 from decimal import Decimal
+from usuarios.models import Perfil  # Asegurate de que esté importado
+from datetime import date
 
 #!/usr/bin/env python
 import os
@@ -105,6 +107,46 @@ if not User.objects.filter(username='admin').exists():
     user.last_login = user.date_joined  # Asignamos la fecha de creación como last_login
     user.save()
     print("Superusuario creado")
+
+usuarios_data = [
+    {
+        'first_name': 'Juan',
+        'last_name': 'Perez',
+        'email': 'juan@gmail.com',
+        'dni': '30123456',
+        'telefono': '2211234567',
+        'fecha_nacimiento': date(1995, 12, 12),
+        'password': 'juan'
+    },
+    {
+        'first_name': 'Pepe',
+        'last_name': 'Juarez',
+        'email': 'pepe@gmail.com',
+        'dni': '32123456',
+        'telefono': '2217654321',
+        'fecha_nacimiento': date(1995, 12, 12),
+        'password': 'pepe'
+    }
+]
+
+for u in usuarios_data:
+    if not User.objects.filter(username=u['email']).exists():
+        user = User.objects.create_user(
+            username=u['email'],
+            email=u['email'],
+            password=u['password'],
+            first_name=u['first_name'],
+            last_name=u['last_name']
+        )
+        Perfil.objects.create(
+            usuario=user,
+            dni=u['dni'],
+            telefono=u['telefono'],
+            fecha_nacimiento=u['fecha_nacimiento']
+        )
+        print(f"Usuario creado: {u['first_name']} {u['last_name']} ({u['email']})")
+    else:
+        print(f"Usuario ya existe: {u['email']}")
 
 # Crear algunos vehículos de ejemplo
 vehiculos = [
@@ -202,14 +244,14 @@ tarjetas_template = [
         'numero': '1234567890101112',
         'vencimiento': '2032-12-31',  
         'pin': '112',  
-        'saldo': Decimal('150000.00') 
+        'saldo': Decimal('2000.00') 
     },
     {
         'tipo': 'debito', # Tarjeta de debito con saldo mas o menos y vencimiento valido
         'numero': '1211100987654321',
         'vencimiento': '2031-01-01',
         'pin': '321',
-        'saldo': Decimal('50000.00')
+        'saldo': Decimal('500.00')
     },
     {
         'tipo': 'credito',  # Tarjeta de credito vencida
