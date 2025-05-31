@@ -81,6 +81,9 @@ class Reserva(models.Model):
         if self.fecha_fin < self.fecha_inicio:
             raise ValidationError("La fecha de fin debe ser posterior a la fecha de inicio.")
         
+        if (self.fecha_fin - self.fecha_inicio).days > 14:
+            raise ValidationError("La duración de la reserva no puede exceder los 14 días.")
+        
         # Validar que el vehiculo no este reservado en las fechas seleccionadas
         # Solo si tenemos un vehículo asignado
         if hasattr(self, 'vehiculo') and self.vehiculo:

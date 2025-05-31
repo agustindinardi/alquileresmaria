@@ -245,7 +245,7 @@ tarjetas_template = [
         'vencimiento': '2032-12-31',  
         'pin': '112',  
         'saldo': Decimal('2000.00'),
-        'dni_titular': '111111111' # DNI del titular Juan  
+        'dni_titular': '11111111' # DNI del titular Juan  
     },
     {
         'tipo': 'debito', # Tarjeta de debito con saldo mas o menos y vencimiento valido
@@ -253,7 +253,7 @@ tarjetas_template = [
         'vencimiento': '2031-01-01',
         'pin': '321',
         'saldo': Decimal('500.00'),
-        'dni_titular': '222222222' # DNI del titular Pepe
+        'dni_titular': '22222222' # DNI del titular Pepe
     },
     {
         'tipo': 'credito',  # Tarjeta de credito vencida
@@ -261,7 +261,7 @@ tarjetas_template = [
         'vencimiento': '2023-12-12',
         'pin': '920',
         'saldo': Decimal('0.00'),
-        'dni_titular': '000000000'
+        'dni_titular': '00000000'
     }
 ]
 
