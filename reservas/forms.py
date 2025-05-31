@@ -1,6 +1,7 @@
 from django import forms
 from .models import Reserva, Tarjeta
 from django.utils import timezone
+from usuarios.models import Perfil
 
 class ReservaForm(forms.ModelForm):
 
@@ -77,24 +78,47 @@ class ReservaForm(forms.ModelForm):
                     break
         
         
-         # Validación de tarjeta
-        try:
-            tarjeta = Tarjeta.objects.get(numero=numero_tarjeta)
-        except Tarjeta.DoesNotExist:
-            self.add_error('numero_tarjeta', "El número de tarjeta no es válido.")
-            return cleaned_data
+         # Validación de tarjeta (por etapas)
+        tarjeta = None
+        if numero_tarjeta:
+            try:
+                tarjeta = Tarjeta.objects.get(numero=numero_tarjeta)
+            except Tarjeta.DoesNotExist:
+                self.add_error('numero_tarjeta', "El número de tarjeta no es válido.")
+                return cleaned_data  # Detener validaciones siguientes si no hay tarjeta
 
-        if tarjeta.pin != pin_tarjeta:
-            self.add_error('pin_tarjeta', "El PIN ingresado no es correcto.")
+        if tarjeta:
+            if not pin_tarjeta:
+                self.add_error('pin_tarjeta', "Este campo es obligatorio.")
+                return cleaned_data
 
-        if tarjeta.vencimiento != vencimiento_input:
-            self.add_error('vencimiento_tarjeta', "La fecha de vencimiento no coincide con la tarjeta.")
+            if tarjeta.pin != pin_tarjeta:
+                self.add_error('pin_tarjeta', "El PIN ingresado no es correcto.")
+                return cleaned_data
 
-        if tarjeta.vencimiento < timezone.now().date():
-            self.add_error('vencimiento_tarjeta', "La tarjeta está vencida.")
+            if tarjeta.vencimiento != vencimiento_input:
+                self.add_error('vencimiento_tarjeta', "La fecha de vencimiento no coincide con la tarjeta.")
+                return cleaned_data
 
-        if tarjeta.dni_titular and tarjeta.dni_titular != dni_titular:
-            self.add_error('dni_titular', "El DNI del titular no coincide con la tarjeta.")
+            if tarjeta.vencimiento < timezone.now().date():
+                self.add_error('vencimiento_tarjeta', "La tarjeta está vencida.")
+                return cleaned_data
+
+            errores_dni = []
+            if tarjeta.dni_titular and tarjeta.dni_titular != dni_titular:
+                errores_dni.append("no coincide con la tarjeta")
+
+            try:
+                perfil_usuario = self.usuario.perfil
+                if perfil_usuario.dni and perfil_usuario.dni != dni_titular:
+                    errores_dni.append("no coincide con su perfil de usuario")
+            except Perfil.DoesNotExist:
+                errores_dni.append("no se encontró perfil de usuario para verificar el DNI")
+
+            if errores_dni:
+                self.add_error('dni_titular', "El DNI del titular " + " y/o ".join(errores_dni) + ".")
+                return cleaned_data
+
 
         # Verificar saldo
         if fecha_inicio and fecha_fin:
