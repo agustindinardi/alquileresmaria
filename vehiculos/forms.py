@@ -32,7 +32,7 @@ class VehiculoForm(forms.ModelForm):
         self.fields['sucursal'].label = 'Sucursal'
         
         # Hacer que algunos campos sean obligatorios
-        for campo in ['marca', 'tipo', 'modelo', 'ano', 'patente', 'capacidad', 'precio_por_dia', 'kilometraje', 'sucursal']:
+        for campo in ['marca', 'tipo', 'modelo', 'ano', 'patente', 'capacidad', 'precio_por_dia', 'kilometraje', 'sucursal', 'politica_reembolso']:
             self.fields[campo].required = True
     
     def clean_patente(self):

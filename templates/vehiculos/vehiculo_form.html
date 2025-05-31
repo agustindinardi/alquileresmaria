@@ -126,7 +126,7 @@
                             <!-- Política de reembolso -->
                             <div class="mb-3">
                                 <label for="{{ form.politica_reembolso.id_for_label }}" class="form-label">{{ form.politica_reembolso.label }}{% if form.politica_reembolso.field.required %}*{% endif %}</label>
-                                {{ form.politica_reembolso|add_class:"form-select" }}
+                                {{ form.politica_reembolso|add_class:"form-select campo-obligatorio" }}
                                 {% if form.politica_reembolso.errors %}
                                     <div class="text-danger small">{{ form.politica_reembolso.errors }}</div>
                                 {% endif %}
