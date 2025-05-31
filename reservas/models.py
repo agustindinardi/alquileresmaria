@@ -26,6 +26,7 @@ class Tarjeta(models.Model):
     vencimiento = models.DateField()
     pin = models.CharField(max_length=3)
     saldo = models.DecimalField(max_digits=10, decimal_places=2)
+    dni_titular = models.CharField(max_length=10, blank=True, null=True)  # DNI del titular de la tarjeta
 
     def __str__(self):
         return f"{self.get_tipo_display()} - **** **** **** {self.numero[-4:]}"

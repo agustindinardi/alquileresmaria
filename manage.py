@@ -113,7 +113,7 @@ usuarios_data = [
         'first_name': 'Juan',
         'last_name': 'Perez',
         'email': 'juan@gmail.com',
-        'dni': '30123456',
+        'dni': '111111111',
         'telefono': '2211234567',
         'fecha_nacimiento': date(1995, 12, 12),
         'password': 'juan'
@@ -122,7 +122,7 @@ usuarios_data = [
         'first_name': 'Pepe',
         'last_name': 'Juarez',
         'email': 'pepe@gmail.com',
-        'dni': '32123456',
+        'dni': '222222222',
         'telefono': '2217654321',
         'fecha_nacimiento': date(1995, 12, 12),
         'password': 'pepe'
@@ -244,21 +244,24 @@ tarjetas_template = [
         'numero': '1234567890101112',
         'vencimiento': '2032-12-31',  
         'pin': '112',  
-        'saldo': Decimal('2000.00') 
+        'saldo': Decimal('2000.00'),
+        'dni_titular': '111111111' # DNI del titular Juan  
     },
     {
         'tipo': 'debito', # Tarjeta de debito con saldo mas o menos y vencimiento valido
         'numero': '1211100987654321',
         'vencimiento': '2031-01-01',
         'pin': '321',
-        'saldo': Decimal('500.00')
+        'saldo': Decimal('500.00'),
+        'dni_titular': '222222222' # DNI del titular Pepe
     },
     {
         'tipo': 'credito',  # Tarjeta de credito vencida
         'numero': '1314151617181920',
         'vencimiento': '2023-12-12',
         'pin': '920',
-        'saldo': Decimal('0.00')
+        'saldo': Decimal('0.00'),
+        'dni_titular': '000000000'
     }
 ]
 
@@ -269,7 +272,8 @@ for tarjeta_data in tarjetas_template:
             'tipo': tarjeta_data['tipo'],
             'vencimiento': tarjeta_data['vencimiento'],
             'pin': tarjeta_data['pin'],
-            'saldo': tarjeta_data['saldo']
+            'saldo': tarjeta_data['saldo'],
+            'dni_titular': tarjeta_data['dni_titular']
         }
     )
 

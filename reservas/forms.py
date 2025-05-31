@@ -24,6 +24,13 @@ class ReservaForm(forms.ModelForm):
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
     )
 
+    dni_titular = forms.CharField(
+    label="DNI del titular de la tarjeta",
+    max_length=10,
+    widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+
+
     class Meta:
         model = Reserva
         fields = ['fecha_inicio', 'fecha_fin', 'dni_conductor']
@@ -44,6 +51,7 @@ class ReservaForm(forms.ModelForm):
         fecha_fin = cleaned_data.get('fecha_fin')
         dni_conductor = cleaned_data.get('dni_conductor')
         numero_tarjeta = cleaned_data.get('numero_tarjeta')
+        dni_titular = cleaned_data.get('dni_titular')
         pin_tarjeta = cleaned_data.get('pin_tarjeta')
         vencimiento_input = cleaned_data.get('vencimiento_tarjeta')
         
@@ -84,6 +92,9 @@ class ReservaForm(forms.ModelForm):
 
         if tarjeta.vencimiento < timezone.now().date():
             self.add_error('vencimiento_tarjeta', "La tarjeta está vencida.")
+
+        if tarjeta.dni_titular and tarjeta.dni_titular != dni_titular:
+            self.add_error('dni_titular', "El DNI del titular no coincide con la tarjeta.")
 
         # Verificar saldo
         if fecha_inicio and fecha_fin:
