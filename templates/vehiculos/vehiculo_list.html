@@ -308,15 +308,34 @@ document.addEventListener('DOMContentLoaded', function() {
     var buscarBtn = document.getElementById('buscarBtn');
     var isStaff = document.getElementById('user-staff').textContent === 'true';
     
+    // Establecer fecha mínima como hoy
+    var hoy = new Date();
+    var fechaHoy = hoy.toISOString().split('T')[0];
+    
+    // Configurar fecha mínima para entrega (solo si no es staff)
+    if (!isStaff && fechaEntrega) {
+        fechaEntrega.min = fechaHoy;
+    }
+    
     function validarFormulario() {
         if (isStaff) {
+            // Staff puede buscar sin restricciones
             buscarBtn.disabled = false;
             buscarBtn.className = 'btn btn-primary';
         } else {
+            // Usuarios normales necesitan fechas válidas
             var fechaEntregaOk = fechaEntrega.value !== '';
             var fechaDevolucionOk = fechaDevolucion.value !== '';
             
-            if (fechaEntregaOk && fechaDevolucionOk) {
+            // Validar que la fecha de entrega no sea anterior a hoy
+            var fechaEntregaValida = true;
+            if (fechaEntrega.value) {
+                var entregaDate = new Date(fechaEntrega.value);
+                var hoyDate = new Date(fechaHoy);
+                fechaEntregaValida = entregaDate >= hoyDate;
+            }
+            
+            if (fechaEntregaOk && fechaDevolucionOk && fechaEntregaValida) {
                 buscarBtn.disabled = false;
                 buscarBtn.className = 'btn btn-success';
             } else {
@@ -329,11 +348,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (fechaEntrega && fechaDevolucion) {
         fechaEntrega.addEventListener('change', function() {
             if (this.value) {
+                // Establecer fecha mínima de devolución como el día siguiente a la entrega
                 var entrega = new Date(this.value);
                 entrega.setDate(entrega.getDate() + 1);
                 var minDate = entrega.toISOString().split('T')[0];
                 fechaDevolucion.min = minDate;
                 
+                // Si la fecha de devolución actual es anterior o igual, limpiarla
                 if (fechaDevolucion.value && fechaDevolucion.value <= this.value) {
                     fechaDevolucion.value = '';
                 }
@@ -341,10 +362,15 @@ document.addEventListener('DOMContentLoaded', function() {
             validarFormulario();
         });
         
-        fechaDevolucion.addEventListener('change', validarFormulario);
+        fechaDevolucion.addEventListener('change', function() {
+            validarFormulario();
+        });
+        
+        // Validar al cargar la página
         validarFormulario();
     }
     
+    // Formateo de marca (mantener funcionalidad existente)
     var marcaInput = document.getElementById('marca');
     if (marcaInput) {
         marcaInput.addEventListener('blur', function() {
