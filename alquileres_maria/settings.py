@@ -28,7 +28,6 @@ INSTALLED_APPS = [
     # Paquetes de terceros
     'crispy_forms',
     'crispy_bootstrap5',
-    'widget_tweaks'
 ]
 
 MIDDLEWARE = [
@@ -69,21 +68,21 @@ DATABASES = {
     }
 }
 
-# # Password validation
-# AUTH_PASSWORD_VALIDATORS = [
-#     {
-#         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-#     },
-#     #{
-#     #    'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-#     #},
-#     {
-#         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-#     },
-#     {
-#         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-#     },
-# ]
+# Password validation
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
 
 # Internationalization
 LANGUAGE_CODE = 'es-ar'
@@ -111,30 +110,3 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
 LOGIN_URL = 'login'
-
-# Backend predeterminado para el login después de registro
-AUTHENTICATION_BACKENDS = [
-    'usuarios.backends.EmailBackend',              # Para iniciar sesión con correo electrónico
-    'django.contrib.auth.backends.ModelBackend',  # Para iniciar sesión con nombre de usuario
-]
-
-# Backend de envío de correos
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-
-# Servidor SMTP de Gmail
-EMAIL_HOST = 'smtp.gmail.com'
-
-# Puerto de conexión SMTP (seguro)
-EMAIL_PORT = 587
-
-# Utilizar el protocolo TLS (Transport Layer Security) para cifrar la conexión
-EMAIL_USE_TLS = True
-
-# Dirección de correo que enviará los mensajes (tu cuenta de Gmail)
-EMAIL_HOST_USER = 'alquileresmaria4@gmail.com'
-
-# Contraseña de tu cuenta de Gmail (o una contraseña de aplicación si tienes 2FA activado)
-EMAIL_HOST_PASSWORD = 'xiclzrdzqvmheiqc'
-
-# Correo por defecto que aparecerá como remitente en los mensajes
-DEFAULT_FROM_EMAIL = 'Alquileres María <alquileresmaria4@gmail.com>'

@@ -14,9 +14,12 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'vehiculos:lista' %}">Vehiculos</a>
                 </li>
-                {% if user.is_authenticated and not user.is_staff %}
+                {% if user.is_authenticated %}
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'reservas:lista' %}">Mis Reservas</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'pagos:historial' %}">Mis Pagos</a>
                 </li>
                 {% endif %}
             </ul>

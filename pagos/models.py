@@ -1,5 +1,5 @@
 from django.db import models
-from reservas.models import Reserva, Tarjeta
+from reservas.models import Reserva
 
 class MetodoPago(models.Model):
     nombre = models.CharField(max_length=50)
