@@ -67,6 +67,7 @@ def iniciar_sesion(request):
                             [user.email],
                             fail_silently=False,
                         )
+                        print("EL CODIGO DE SEGURIDAD ES:", codigo)  # Pa que no rompa las bola
                         # Redirigir sin mensaje - el mensaje se muestra en la página de validación
                         return redirect('usuarios:validar_codigo')
                     except Exception as e:
