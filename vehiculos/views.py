@@ -13,6 +13,8 @@ from django.db.models import Q
 
 from .models import Vehiculo, Marca, TipoVehiculo, PoliticaReembolso, Sucursal, Estado
 from .forms import VehiculoForm, VehiculoEstadoForm, BusquedaVehiculoForm
+from reservas.models import Reserva  # Asegurate que esta importación sea correcta según tu estructura
+
 
 # Función auxiliar para comprobar si el usuario es staff
 def es_staff(user):
@@ -336,7 +338,8 @@ class VehiculoDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         vehiculo = self.get_object()
 
         # Verificar si el vehículo está reservado
-        if vehiculo.esta_reservado():   # jeje ta bien
+        # if vehiculo.esta_reservado():   jeje ta bien
+        if Reserva.objects.filter(vehiculo=vehiculo, motivo_cancelacion__isnull=True).exists():
             messages.error(
                 request, 
                 f'No se puede eliminar el vehículo {vehiculo.marca} {vehiculo.modelo} '

@@ -99,6 +99,15 @@
                             </div>
                             <div class="card-body">
 
+                                <!-- DNI del titular de la tarjeta-->
+                                <div class="mb-3">
+                                    <label for="{{ form.dni_titular.id_for_label }}" class="form-label">DNI del titular de la tarjeta</label>
+                                    {{ form.dni_titular }}
+                                    {% for err in form.dni_titular.errors %}
+                                        <div class="text-danger small">{{ err }}</div>
+                                    {% endfor %}
+                                </div>
+                                
                                 <!-- Número de Tarjeta -->
                                 <div class="mb-3">
                                     <label for="{{ form.numero_tarjeta.id_for_label }}" class="form-label">Número de Tarjeta</label>
