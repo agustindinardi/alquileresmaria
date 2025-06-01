@@ -118,13 +118,6 @@ class Reserva(models.Model):
         super().save(*args, **kwargs)
     
     
-    def puede_cancelar_usuario(self):
-        """Verifica si el usuario puede cancelar la reserva (24 horas antes)"""
-        horas_limite = 24
-        ahora = timezone.now()
-        inicio_reserva = timezone.make_aware(timezone.datetime.combine(self.fecha_inicio, timezone.datetime.min.time()))
-        return (inicio_reserva - ahora).total_seconds() / 3600 >= horas_limite
-    
     class Meta:
         verbose_name = "Reserva"
         verbose_name_plural = "Reservas"

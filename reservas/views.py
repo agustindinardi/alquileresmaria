@@ -109,11 +109,6 @@ def crear_reserva(request, vehiculo_id):
 def cancelar_reserva(request, pk):
     reserva = get_object_or_404(Reserva, id=pk, usuario=request.user)
     
-    # Verificar si la reserva puede ser cancelada por el usuario
-    if not reserva.puede_cancelar_usuario():
-        messages.error(request, "No es posible cancelar la reserva con menos de 24 horas de anticipación.")
-        return redirect('reservas:lista')
-    
     try:
         with transaction.atomic():
             # Obtener el estado "Cancelada" para la reserva
