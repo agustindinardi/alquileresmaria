@@ -113,7 +113,7 @@ usuarios_data = [
         'first_name': 'Juan',
         'last_name': 'Perez',
         'email': 'juan@gmail.com',
-        'dni': '111111111',
+        'dni': '11111111',
         'telefono': '2211234567',
         'fecha_nacimiento': date(1995, 12, 12),
         'password': 'juan'
@@ -122,7 +122,7 @@ usuarios_data = [
         'first_name': 'Pepe',
         'last_name': 'Juarez',
         'email': 'pepe@gmail.com',
-        'dni': '222222222',
+        'dni': '22222222',
         'telefono': '2217654321',
         'fecha_nacimiento': date(1995, 12, 12),
         'password': 'pepe'
@@ -257,7 +257,7 @@ tarjetas_template = [
     },
     {
         'tipo': 'debito', # Tarjeta de debito con saldo mas o menos y vencimiento valido
-        'numero': '200',
+        'numero': '1211100987654321',
         'vencimiento': '2031-01-01',
         'pin': '321',
         'saldo': Decimal('500.00'),
