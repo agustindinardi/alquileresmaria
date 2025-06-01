@@ -248,8 +248,16 @@ tarjetas_template = [
         'dni_titular': '11111111' # DNI del titular Juan  
     },
     {
+        'tipo': 'credito', # Tarjeta de credito con saldo suficiente y vencimiento valido 
+        'numero': '1111222233334444',
+        'vencimiento': '2032-12-31',  
+        'pin': '112',  
+        'saldo': Decimal('2000.00'),
+        'dni_titular': '43912256' # DNI del titular Agustin Di Nardi 
+    },
+    {
         'tipo': 'debito', # Tarjeta de debito con saldo mas o menos y vencimiento valido
-        'numero': '1211100987654321',
+        'numero': '200',
         'vencimiento': '2031-01-01',
         'pin': '321',
         'saldo': Decimal('500.00'),
