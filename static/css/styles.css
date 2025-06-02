@@ -4,6 +4,7 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 200vh; /* Para que puedas hacer scroll */
+    background-color: #1d1c1c;
 }
 
 .container {
@@ -69,11 +70,43 @@ body {
     color: #1d1c1c;
 }
 
+.bienvenida {
+    background: linear-gradient(#1e2e2b, #1d1c1c)
+}
+
 .nav-link{
     font-size: 18px;
     color: #ffffff;
     margin-left: 5px;
 }
+
+.Form-Bus-Main {
+    background-color: #303f33;
+}
+
+.title-Busform {
+    font-weight: bold;
+    color: #157b34;
+}
+
+label {
+    color: #ffffff; 
+}
+
+
+input, select {
+    background-color: #1e272e;
+    border: 1px solid #ccc;
+    color: #ccc;
+    padding: 8px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+input:required:valid,select:required:valid {
+    background-color: #88cd95;
+}
+
 
 .Info-Home{
     background: linear-gradient(#373737, #12462d);
@@ -96,6 +129,10 @@ body {
 }
 .card-text2{
     color: #ffffff;
+}
+
+.como-funciona {
+    color: #ffffff
 }
 
 /* Estilos para el footer */

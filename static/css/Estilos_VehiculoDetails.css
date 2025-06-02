@@ -1,7 +1,58 @@
-.lista-detalles {
-   background-color: #bcc1bd; 
+h1 {
+   color: #ffffff;
 }
 
-h1 {
-   background-color: aquamarine;
+
+.imagenes {
+   width: 638px; 
+   height: 426px; 
+   float: right; 
+   border: 0.1cm inset, #4c7a2e; 
+   border-radius: 5px;
+}
+
+#Datos {
+  float: left;
+}
+
+.Datos-titulo {
+   background: linear-gradient(#198754, #3c5241);
+   border-radius: 4px !important; 
+   font-weight: bold; 
+   width: 400px;
+   height: 50px; 
+   line-height: 50px;
+   text-align: center;
+}
+.Datos-subtitulo {
+   margin-top: 2rem;
+}
+
+.lista-main {
+   width: 400px;
+   border-radius: 4px; 
+}
+
+.lista-detalles {
+   border-radius: 4px; 
+   margin-top: 10px; 
+   color: #d4d4d4;
+   background: linear-gradient(#3c5241, #19261b);
+}
+
+.descripcion-div {
+   margin-top: 10px;
+}
+
+.descripcion-titulo {
+   color: #ffffff;
+}
+
+.descripcion-body {
+   background-color: #efefef;
+   border: 2.5px solid #4c7a2e; 
+   border-radius: 5px; 
+   margin-top: 10px; 
+   text-align: center; 
+   padding: 20px 20px 20px 20px;
 }

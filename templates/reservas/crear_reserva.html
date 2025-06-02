@@ -1,41 +1,43 @@
 {% extends 'base.html' %}
 
 {% block title %}Reservar {{ vehiculo.marca }} {{ vehiculo.modelo }}{% endblock %}
-
+{% load static %}
+<head>
+    {% block extra_css %}<link rel="stylesheet" href="/static/css/Estilos_CrearReserva.css">{% endblock %}
+</head>
 {% block content %}
 <div class="container py-5">
-    <h1 class="mb-4">Reservar Vehículo</h1>
 
     <div class="row">
         <!-- Datos del Vehículo -->
-        <div class="col-md-6">
-            <div class="card mb-4">
+        <div class="col-md-6 Datos-main">
+            <div class="card mb-4 Datos-submain">
                 {% if vehiculo.imagen %}
-                <img src="{{ vehiculo.imagen.url }}" class="card-img-top" alt="{{ vehiculo }}" style="height: 300px; object-fit: cover;">
+                <img src="{{ vehiculo.imagen.url }}" class="card-img-top imgReserva" alt="{{ vehiculo }}">
                 {% endif %}
                 <div class="card-body">
-                    <h5 class="card-title">{{ vehiculo.marca }} {{ vehiculo.modelo }} ({{ vehiculo.ano }})</h5>
+                    <h5 class="card-title Datos-titulo">{{ vehiculo.marca }} {{ vehiculo.modelo }} ({{ vehiculo.ano }})</h5>
                     <p>
                         <span class="badge {% if vehiculo.disponible %}bg-success{% else %}bg-danger{% endif %}">
                             {% if vehiculo.disponible %}Disponible{% else %}No disponible{% endif %}
                         </span>
                         <span class="badge bg-info text-dark">{{ vehiculo.tipo }}</span>
                     </p>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item"><i class="fas fa-users me-2"></i>{{ vehiculo.capacidad }} pasajeros</li>
-                        <li class="list-group-item"><i class="fas fa-money-bill-wave me-2"></i>${{ vehiculo.precio_por_dia }} / día</li>
+                    <ul class="list-group list-group-flush info-main">
+                        <li class="list-group-item info-body"><i class="fas fa-users me-2 iReserva"></i>{{ vehiculo.capacidad }} pasajeros</li>
+                        <li class="list-group-item info-body"><i class="fas fa-money-bill-wave me-2 iReserva"></i>${{ vehiculo.precio_por_dia }} / día</li>
                         {% if vehiculo.sucursal %}
-                        <li class="list-group-item"><i class="fas fa-building me-2"></i>{{ vehiculo.sucursal }}</li>
+                        <li class="list-group-item info-body"><i class="fas fa-building me-2 iReserva"></i>{{ vehiculo.sucursal }}</li>
                         {% endif %}
-                        <li class="list-group-item"><i class="fas fa-gauge me-2"></i>{{ vehiculo.kilometraje }} km</li>
-                        <li class="list-group-item"><strong>Patente:</strong> {{ vehiculo.patente }}</li>
+                        <li class="list-group-item info-body"><i class="fas fa-gauge me-2 iReserva"></i>{{ vehiculo.kilometraje }} km</li>
+                        <li class="list-group-item info-body"><strong class="strong-body">Patente:</strong> {{ vehiculo.patente }}</li>
 
-                        <li class="list-group-item" id="datosReserva" data-precio="{{ vehiculo.precio_por_dia|default:0|floatformat:2 }}">
-                            <strong>Total a pagar: </strong><i class="fas fa-dollar-sign me-2"></i><span id="totalAPagar">0</span>
+                        <li class="list-group-item info-body" id="datosReserva" data-precio="{{ vehiculo.precio_por_dia|default:0|floatformat:2 }}">
+                            <strong class="strong-body">Total a pagar: </strong><span id="totalAPagar">0</span>
                         </li>
 
-                        <li class="list-group-item"><strong>Reembolso:</strong> {{ vehiculo.politica_reembolso }}</li>
-                        <li class="list-group-item"><strong>Descripción:</strong>
+                        <li class="list-group-item info-body"><strong class="strong-body">Reembolso:</strong> {{ vehiculo.politica_reembolso }}</li>
+                        <li class="list-group-item info-description"><strong>Descripción:</strong>
                             {% if vehiculo.descripcion %}
                                 {{ vehiculo.descripcion }}
                             {% else %}
@@ -50,9 +52,9 @@
         <!-- Formulario de Reserva -->
         <div class="col-md-6">
             {% if user.is_authenticated and not user.is_staff %}
-            <form method="post" novalidate>
+            <form method="post" class="form-main" novalidate>
                 {% csrf_token %}
-                <div class="card shadow-sm">
+                <div class="card shadow-sm Form-div">
                     <div class="card-header bg-primary text-white">
                         <h5 class="mb-0">Datos de la Reserva</h5>
                     </div>
@@ -67,7 +69,7 @@
                         <div class="mb-3">
                             <label for="fecha_entrega_display" class="form-label">Fecha de entrega</label>
                             <input type="text" id="fecha_entrega_display" class="form-control" placeholder="DD/MM/YYYY" readonly>
-                            <input type="date" name="fecha_inicio" id="id_fecha_inicio" hidden>
+                            <input type="date" name="fecha_inicio" id="id_fecha_inicio" hidden> <i></i>
                             {% for err in form.fecha_inicio.errors %}
                                 <div class="text-danger small">{{ err }}</div>
                             {% endfor %}
@@ -94,10 +96,10 @@
                         <!-- Selección de Tarjeta -->
                         <!-- Número de Tarjeta -->
                         <div class="card border-secondary mb-4">
-                            <div class="card-header bg-secondary text-white">
+                            <div class="card-header text-white tarjeta-head">
                                 <strong>Datos de la Tarjeta</strong>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body tarjeta-body">
 
                                 <!-- Número de Tarjeta -->
                                 <div class="mb-3">
