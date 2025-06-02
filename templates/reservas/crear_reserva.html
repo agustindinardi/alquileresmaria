@@ -530,5 +530,24 @@ document.addEventListener('DOMContentLoaded', function() {
         fechaDevolucionDisplay.value = formatoArgentino(fechaFinHidden.value);
     }
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+    const vencInput = document.getElementById('id_vencimiento_tarjeta');
+    if (vencInput) {
+        vencInput.addEventListener('keydown', function(e) {
+            // Permitir TAB, F5, etc. pero bloquear letras y números
+            const keysPermitidas = ['Tab', 'ArrowLeft', 'ArrowRight', 'Delete', 'Backspace'];
+            if (!keysPermitidas.includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        // Extra: prevenir pegado con mouse o Ctrl+V
+        vencInput.addEventListener('paste', function(e) {
+            e.preventDefault();
+        });
+    }
+});
+
 </script>
 {% endblock %}
