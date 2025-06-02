@@ -1,0 +1,76 @@
+.titulo-Pagina {
+    color: #ffffff;
+}
+
+.Form-Bus-Main {
+    background-color: #303f33;
+}
+
+.title-Busform {
+    font-weight: bold;
+    color: #157b34;
+}
+
+label {
+    color: #ffffff; 
+}
+
+
+input, select {
+    background-color: #1e272e;
+    border: 1px solid #ccc;
+    color: #ccc;
+    padding: 8px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+input:required:valid,select:required:valid {
+    background-color: #88cd95;
+}
+
+.List-main{
+    box-shadow: 0px 0px 10px #ffffff;
+    background: linear-gradient(#3c5241, #19261b);
+}
+
+.not-img {
+    height: 200px;
+}
+
+.Titulo-lista {
+    color: #a2bda8;
+    font-weight: bold;
+}
+
+.info-main {
+    background-color: #37493b;
+    border-radius: 5px;
+}
+
+.info-body {
+    background-color: #516c57c3;
+}
+
+
+.btn-editar {
+    background-color: #9dd663;
+    border: 0.5px solid #6a973c;
+    color: #6a973c;
+}
+.btn-editar:hover {
+    background-color: #6a973c;
+    color: #ffffff
+}
+
+.btn-outline-danger {
+    background-color: #543534;
+}
+
+
+.modal-content {
+    background-color: #2a2727;
+}
+.modal-body {
+    color: #ffffff;
+}

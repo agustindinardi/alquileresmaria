@@ -4,14 +4,15 @@
 
 
 
-
-{% block content %}
+{% load static %}
 <head>
-    <link rel="stylesheet" href="Estilos.css">
+    {% block extra_css %}<link rel="stylesheet" href="/static/css/Estilos_VehiculoDetails.css">{% endblock %}
 </head>
-<h1>Detalle del vehiculo  </h1>
+{% block content %}
+
+{% block title %}Detalle {{ vehiculo.marca }} {{ vehiculo.modelo }}{% endblock %}
 <div>
-    <div class="d-flex justify-content-center align-items-center" style="width: 638px; height: 426px; float: right; border: 0.1cm inset black; border-radius: 5px;">
+    <div class="d-flex bg-light justify-content-center align-items-center imagenes">
         {% if vehiculo.imagen %}
             <img src="{{ vehiculo.imagen.url }}" class="card-img-top" alt="{{ vehiculo }}" style="width: 632px; height: 420px; object-fit: cover;">
         {% else %}
@@ -21,28 +22,28 @@
         {% endif %}
     </div>
     
-    <div id="Datos" style="float: left;">
-        <h3 class="mb-0 card-header bg-primary text-dark" style="font-weight: bold; width: 400px; text-align: center;"> {% if vehiculo.id > 0  %} {{ vehiculo.marca }} {{ vehiculo.modelo }} {% else %} Vehiculo no encontrado {% endif %}</h3>
-        <p class="card-text" style="margin-top: 1rem;">
+    <div id="Datos">
+        <h3 class="mb-0 card-header bg-primary text-dark Datos-titulo"> {% if vehiculo.id %} {{ vehiculo.marca }} {{ vehiculo.modelo }} {% else %} Vehiculo no encontrado {% endif %}</h3>
+        <p class="card-text Datos-subtitulo">
             <span class="badge {% if vehiculo.disponible %}bg-success{% else %}bg-danger{% endif %}" style="font-size: 18px;">
                 {% if vehiculo.disponible %}Disponible{% else %}No disponible{% endif %}
             </span>
             <span class="badge bg-info text-dark" style="font-size: 18px;">{{ vehiculo.tipo }}</span>
         </p>
 
-        <ul class="list-group list-group-flush mb-3" style="width: 400px;">
-            <li class="lista-detalles list-group-item" style="border-radius: 4px; margin-top: 10px; background-color: #bdc6bd;"><i class="fas fa-users me-2" style="margin-right: 10px;"></i> {{ vehiculo.capacidad }} pasajeros</li>
-            <li class="list-group-item" style="border-radius: 4px; margin-top: 10px; background-color: #bdc6bd;"><i class="fas fa-calendar me-2" style="margin-right: 10px;"></i> {{ vehiculo.ano }}</li>
-            <li class="list-group-item" style="border-radius: 4px; margin-top: 10px; background-color: #bdc6bd;"><i class="fas fa-money-bill-wave me-2" style="margin-right: 10px;"></i> ${{ vehiculo.precio_por_dia }} / día</li>
+        <ul class="list-group list-group-flush mb-3 lista-main">
+            <li class="lista-detalles list-group-item"><i class="fas fa-users me-2" style="margin-right: 10px;"></i> {{ vehiculo.capacidad }} pasajeros</li>
+            <li class="lista-detalles list-group-item"><i class="fas fa-calendar me-2" style="margin-right: 10px;"></i> {{ vehiculo.ano }}</li>
+            <li class="lista-detalles list-group-item"><i class="fas fa-money-bill-wave me-2" style="margin-right: 10px;"></i> ${{ vehiculo.precio_por_dia }} / día</li>
             {% if vehiculo.sucursal %}
-            <li class="list-group-item" style="border-radius: 4px; margin-top: 10px; background-color: #bdc6bd;"><i class="fas fa-building me-2" style="margin-right: 10px;"></i> {{ vehiculo.sucursal }}</li>
+            <li class="lista-detalles list-group-item"><i class="fas fa-building me-2" style="margin-right: 10px;"></i> {{ vehiculo.sucursal }}</li>
             {% endif %}
-            <li class="lista-detalles list-group-item" style="border-radius: 4px; margin-top: 10px; background-color: #bdc6bd;"><i class="fa-solid fa-gauge" style="margin-right: 10px;"></i> {{ vehiculo.kilometraje }}km </li>
-            <li class="lista-detalles list-group-item" style="border-radius: 4px; margin-top: 10px; background-color: #bdc6bd;"><strong>Patente: </strong>{{ vehiculo.patente }} </li>
-            <li class="lista-detalles list-group-item" style="border-radius: 4px; margin-top: 10px; background-color: #bdc6bd;"><strong>Reembolso: </strong>{{ vehiculo.politica_reembolso }} </li>
-            <div style="margin-top: 10px;">
-                <strong>Descripción</strong>
-                <div style="border: 1px solid black; border-radius: 5px; margin-top: 10px; text-align: center; padding: 20px 20px 20px 20px;">
+            <li class="lista-detalles list-group-item"><i class="fa-solid fa-gauge" style="margin-right: 10px;"></i> {{ vehiculo.kilometraje }}km </li>
+            <li class="lista-detalles list-group-item"><strong>Patente: </strong>{{ vehiculo.patente }} </li>
+            <li class="lista-detalles list-group-item"><strong>Reembolso: </strong>{{ vehiculo.politica_reembolso }} </li>
+            <div class="descripcion-div">
+                <strong class="descripcion-titulo">Descripción</strong>
+                <div class="descripcion-body">
                     {% if vehiculo.descripcion %} {{ vehiculo.descripcion }} {% else %} 
                     <p style="font-style: italic;">No hay descripción patra este vehiculo</p> 
                     {% endif %}
