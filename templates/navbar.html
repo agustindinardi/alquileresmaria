@@ -20,6 +20,16 @@
                     <a class="nav-link" href="{% url 'reservas:lista' %}">Mis Reservas</a>
                 </li>
                 {% endif %}
+                {% comment %} Sección Mis Empleados - Solo para administradores {% endcomment %}
+                {% if user.is_authenticated %}
+                    {% if user.email == "alquileresmaria4@gmail.com" or user.is_staff or user.is_superuser %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'usuarios:lista_empleados' %}">
+                            <i class="fas fa-users"></i> Mis Empleados
+                        </a>
+                    </li>
+                    {% endif %}
+                {% endif %}
             </ul>
             <ul class="navbar-nav">
                 {% if user.is_authenticated %}
@@ -31,6 +41,12 @@
                         <li><a class="dropdown-item" href="{% url 'usuarios:perfil' %}">Mi Perfil</a></li>
                         {% if user.is_staff %}
                         <li><a class="dropdown-item" href="{% url 'admin:index' %}">Administracion</a></li>
+                        {% endif %}
+                        {% comment %} También agregar Mis Empleados en el dropdown como alternativa {% endcomment %}
+                        {% if user.email == "alquileresmaria4@gmail.com" or user.is_staff or user.is_superuser %}
+                        <li><a class="dropdown-item" href="{% url 'usuarios:lista_empleados' %}">
+                            <i class="fas fa-users"></i> Mis Empleados
+                        </a></li>
                         {% endif %}
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{% url 'usuarios:logout' %}">Cerrar Sesion</a></li>

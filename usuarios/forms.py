@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from .models import Perfil
+from .models import Perfil, Empleado
 from django.contrib.auth.forms import UserCreationForm
 from datetime import date
 
@@ -74,7 +74,98 @@ class PerfilForm(forms.ModelForm):
         if not dni.isdigit():
             raise forms.ValidationError("El DNI debe contener solo números.")
         return dni
- 
+
+# Formulario para crear empleado
+class EmpleadoForm(forms.ModelForm):
+    first_name = forms.CharField(
+        max_length=30,
+        label="Nombre",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'required': 'required'})
+    )
+    last_name = forms.CharField(
+        max_length=30,
+        label="Apellido",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'required': 'required'})
+    )
+    email = forms.EmailField(
+        label="Correo Electrónico",
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'required': 'required'})
+    )
+    
+    class Meta:
+        model = Empleado
+        fields = ['dni', 'fecha_nacimiento', 'sucursal']
+        widgets = {
+            'fecha_nacimiento': forms.DateInput(
+                format='%Y-%m-%d',
+                attrs={'type': 'date', 'class': 'form-control', 'required': 'required'}
+            ),
+            'dni': forms.TextInput(attrs={'class': 'form-control', 'required': 'required'}),
+            'sucursal': forms.Select(attrs={'class': 'form-control', 'required': 'required'}),
+        }
+        labels = {
+            'dni': 'DNI',
+            'fecha_nacimiento': 'Fecha de Nacimiento',
+            'sucursal': 'Sucursal',
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.instance_pk = kwargs.pop('instance_pk', None)
+        super().__init__(*args, **kwargs)
+        
+        # Si estamos editando, llenar los campos del usuario
+        if self.instance and self.instance.pk:
+            self.fields['first_name'].initial = self.instance.usuario.first_name
+            self.fields['last_name'].initial = self.instance.usuario.last_name
+            self.fields['email'].initial = self.instance.usuario.email
+
+    def clean_dni(self):
+        dni = self.cleaned_data.get('dni')
+        
+        # Validar que solo contenga números
+        if not dni.isdigit():
+            raise forms.ValidationError("El DNI debe contener solo números.")
+        
+        # Validar que el DNI sea único (excepto para el empleado actual en edición)
+        existing_empleado = Empleado.objects.filter(dni=dni).first()
+        if existing_empleado:
+            if not self.instance or existing_empleado.pk != self.instance.pk:
+                raise forms.ValidationError("El Empleado ya se encuentra registrado.")
+        
+        # También verificar en Perfil para evitar conflictos
+        if Perfil.objects.filter(dni=dni).exists():
+            raise forms.ValidationError("Este DNI ya está registrado en el sistema.")
+        
+        return dni
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+
+        existing_user = User.objects.filter(email=email).first()
+        
+        # Verificamos si la instancia tiene asignado un usuario antes de comparar
+        if existing_user:
+            if not self.instance.pk or not hasattr(self.instance, 'usuario') or existing_user != getattr(self.instance, 'usuario', None):
+                raise forms.ValidationError("Este correo electrónico ya está registrado.")
+
+        return email
+
+
+    def clean_fecha_nacimiento(self):
+        fecha_nacimiento = self.cleaned_data.get('fecha_nacimiento')
+        
+        if fecha_nacimiento is None:
+            return fecha_nacimiento
+        
+        # Calcular edad
+        hoy = date.today()
+        edad = hoy.year - fecha_nacimiento.year - ((hoy.month, hoy.day) < (fecha_nacimiento.month, fecha_nacimiento.day))
+        
+        if edad < 18:
+            raise forms.ValidationError("El Empleado no puede registrarse ya que no cumple con el limite de edad.")
+        
+        return fecha_nacimiento
+
 #Formulario para loguearse
 class EmailLoginForm(AuthenticationForm):
     username = forms.EmailField(label="Correo electrónico")

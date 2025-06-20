@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<div class="container mt-5">
+    <h2 class="mb-4">Listado de Empleados</h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <a href="{% url 'usuarios:crear_empleado' %}" class="btn btn-success mb-3">Registrar nuevo Empleado</a>
+
+    <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>DNI</th>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Fecha de Nacimiento</th>
+                <th>Email</th>
+                <th>Sucursal</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+            <tbody>
+                {% for empleado in empleados %}
+                <tr>
+                    <td>{{ empleado.dni }}</td>
+                    <td>{{ empleado.usuario.first_name }}</td>
+                    <td>{{ empleado.usuario.last_name }}</td>
+                    <td>{{ empleado.fecha_nacimiento }}</td>
+                    <td>{{ empleado.usuario.email }}</td>
+                    <td>{{ empleado.sucursal }}</td>
+                    <td>
+                        <a href="{% url 'usuarios:editar_empleado' empleado.id %}" class="btn btn-sm btn-primary">Editar</a>
+                        <a href="{% url 'usuarios:eliminar_empleado' empleado.id %}" class="btn btn-sm btn-danger">Eliminar</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">No hay empleados registrados.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+    </table>
+</div>
+
+{% endblock %}

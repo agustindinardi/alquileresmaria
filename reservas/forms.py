@@ -1,3 +1,4 @@
+from datetime import date
 from django import forms
 from .models import Reserva, Tarjeta
 from django.utils import timezone
@@ -22,7 +23,7 @@ class ReservaForm(forms.ModelForm):
     )
     vencimiento_tarjeta = forms.DateField(
         label="Fecha de Vencimiento",
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'min': date.today().isoformat()})
     )
 
     dni_titular = forms.CharField(

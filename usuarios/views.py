@@ -1,9 +1,10 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout, get_user_model
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from .forms import EmailLoginForm, CodigoValidacionForm
+from django.contrib.auth.decorators import login_required, user_passes_test
+from .forms import EmailLoginForm, CodigoValidacionForm, EmpleadoForm
 from .forms import UserForm, PerfilForm, RecuperarContrasenaForm
+from .models import Empleado
 from django.contrib.auth.views import LoginView, LogoutView
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
@@ -38,6 +39,14 @@ def generar_codigo_seguridad():
 def es_administrador(user):
     """Verifica si el usuario es administrador"""
     return user.email == "alquileresmaria4@gmail.com" or user.is_staff or user.is_superuser
+
+def administrador_requerido(user):
+    """Decorador para verificar si el usuario es administrador"""
+    return es_administrador(user)
+
+def generar_contrasena_empleado():
+    """Genera una contraseña aleatoria de 6 caracteres para empleados"""
+    return get_random_string(length=6)
 
 def iniciar_sesion(request):
     if request.method == 'POST':
@@ -147,6 +156,136 @@ def cerrar_sesion(request):
 @login_required
 def perfil(request):
     return render(request, 'usuarios/perfil.html')
+
+# VISTAS DE EMPLEADOS
+
+@login_required
+@user_passes_test(administrador_requerido)
+def lista_empleados(request):
+    """Vista para listar todos los empleados - solo para administradores"""
+    empleados = Empleado.objects.filter(activo=True).select_related('usuario')
+    return render(request, 'usuarios/lista_empleados.html', {
+        'empleados': empleados
+    })
+
+@login_required
+@user_passes_test(administrador_requerido)
+def crear_empleado(request):
+    """Vista para crear un nuevo empleado - solo para administradores"""
+    if request.method == 'POST':
+        form = EmpleadoForm(request.POST)
+        if form.is_valid():
+            try:
+                pswd = generar_contrasena_empleado()
+                # Crear usuario
+                User = get_user_model()
+                user = User.objects.create_user(
+                    username=form.cleaned_data['email'],
+                    email=form.cleaned_data['email'],
+                    first_name=form.cleaned_data['first_name'],
+                    last_name=form.cleaned_data['last_name'],
+                    password=pswd
+                )
+                
+                # Crear empleado
+                empleado = form.save(commit=False)
+                empleado.usuario = user
+                empleado.save()
+                
+                # Enviar contraseña por correo
+                try:
+                    send_mail(
+                        'Bienvenido a Alquileres María - Credenciales de acceso',
+                        f'Hola {user.first_name},\n\n'
+                        f'Te damos la bienvenida a Alquileres María. Has sido registrado como empleado.\n\n'
+                        f'Tus credenciales de acceso son:\n'
+                        f'Email: {user.email}\n'
+                        f'Contraseña: {pswd}\n\n'  # Nota: esto enviará el hash, necesitas guardar la contraseña antes del hash
+                        f'Por favor, cambia tu contraseña después del primer inicio de sesión.\n\n'
+                        f'Saludos,\n'
+                        f'Equipo de Alquileres María',
+                        settings.DEFAULT_FROM_EMAIL,
+                        [user.email],
+                        fail_silently=False,
+                    )
+                    
+                    messages.success(request, f'Empleado {user.first_name} {user.last_name} registrado exitosamente. Se ha enviado la contraseña por correo.')
+                    return redirect('usuarios:lista_empleados')
+                    
+                except Exception as e:
+                    # Si falla el envío del correo, eliminar el usuario y empleado creados
+                    empleado.delete()
+                    user.delete()
+                    messages.error(request, 'Error al enviar las credenciales por correo. El empleado no fue registrado.')
+                    
+            except Exception as e:
+                messages.error(request, f'Error al crear el empleado: {str(e)}')
+                
+    else:
+        form = EmpleadoForm()
+    
+    return render(request, 'usuarios/crear_empleado.html', {
+        'form': form,
+        'titulo': 'Registrar Empleado'
+    })
+
+@login_required
+@user_passes_test(administrador_requerido)
+def editar_empleado(request, empleado_id):
+    """Vista para editar un empleado existente - solo para administradores"""
+    empleado = get_object_or_404(Empleado, id=empleado_id, activo=True)
+    
+    if request.method == 'POST':
+        form = EmpleadoForm(request.POST, instance=empleado, instance_pk=empleado.pk)
+        if form.is_valid():
+            try:
+                # Actualizar datos del usuario
+                user = empleado.usuario
+                user.first_name = form.cleaned_data['first_name']
+                user.last_name = form.cleaned_data['last_name']
+                user.email = form.cleaned_data['email']
+                user.username = form.cleaned_data['email']
+                user.save()
+                
+                # Actualizar empleado
+                form.save()
+                
+                messages.success(request, f'Empleado {user.first_name} {user.last_name} actualizado exitosamente.')
+                return redirect('usuarios:lista_empleados')
+                
+            except Exception as e:
+                messages.error(request, f'Error al actualizar el empleado: {str(e)}')
+                
+    else:
+        form = EmpleadoForm(instance=empleado, instance_pk=empleado.pk)
+    
+    return render(request, 'usuarios/crear_empleado.html', {
+        'form': form,
+        'empleado': empleado,
+        'titulo': 'Modificar Empleado'
+    })
+
+@login_required
+@user_passes_test(administrador_requerido)
+def eliminar_empleado(request, empleado_id):
+    """Vista para eliminar (desactivar) un empleado - solo para administradores"""
+    empleado = get_object_or_404(Empleado, id=empleado_id, activo=True)
+    
+    if request.method == 'POST':
+        # Desactivar en lugar de eliminar físicamente
+        empleado.activo = False
+        empleado.save()
+        
+        # También desactivar el usuario
+        empleado.usuario.is_active = False
+        empleado.usuario.save()
+        
+        messages.success(request, f'Empleado {empleado.usuario.first_name} {empleado.usuario.last_name} eliminado exitosamente.')
+        return redirect('usuarios:lista_empleados')
+    
+    return render(request, 'usuarios/confirmar_eliminar.html', {
+        'empleado': empleado
+    })
 
 #Vista para recuperar contraseña
 User = get_user_model()
