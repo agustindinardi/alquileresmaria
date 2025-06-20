@@ -162,11 +162,22 @@ def perfil(request):
 @login_required
 @user_passes_test(administrador_requerido)
 def lista_empleados(request):
-    """Vista para listar todos los empleados - solo para administradores"""
-    empleados = Empleado.objects.filter(activo=True).select_related('usuario')
-    return render(request, 'usuarios/lista_empleados.html', {
-        'empleados': empleados
-    })
+    if request.method == "POST":
+        empleado_id = request.POST.get("empleado_id")
+        empleado = get_object_or_404(Empleado, id=empleado_id, activo=True)
+
+        # Dar de baja
+        empleado.activo = False
+        empleado.save()
+        empleado.usuario.is_active = False
+        empleado.usuario.save()
+
+        messages.success(request, f"Empleado {empleado.usuario.first_name} {empleado.usuario.last_name} dado de baja correctamente.")
+        return redirect('usuarios:lista_empleados')
+
+    empleados = Empleado.objects.filter(activo=True)
+    return render(request, 'usuarios/lista_empleados.html', {'empleados': empleados})
+
 
 @login_required
 @user_passes_test(administrador_requerido)

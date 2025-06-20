@@ -25,26 +25,54 @@
                 <th>Acciones</th>
             </tr>
         </thead>
-            <tbody>
-                {% for empleado in empleados %}
-                <tr>
-                    <td>{{ empleado.dni }}</td>
-                    <td>{{ empleado.usuario.first_name }}</td>
-                    <td>{{ empleado.usuario.last_name }}</td>
-                    <td>{{ empleado.fecha_nacimiento }}</td>
-                    <td>{{ empleado.usuario.email }}</td>
-                    <td>{{ empleado.sucursal }}</td>
-                    <td>
-                        <a href="{% url 'usuarios:editar_empleado' empleado.id %}" class="btn btn-sm btn-primary">Editar</a>
-                        <a href="{% url 'usuarios:eliminar_empleado' empleado.id %}" class="btn btn-sm btn-danger">Eliminar</a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="text-center">No hay empleados registrados.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
+        <tbody>
+            {% for empleado in empleados %}
+            <tr>
+                <td>{{ empleado.dni }}</td>
+                <td>{{ empleado.usuario.first_name }}</td>
+                <td>{{ empleado.usuario.last_name }}</td>
+                <td>{{ empleado.fecha_nacimiento }}</td>
+                <td>{{ empleado.usuario.email }}</td>
+                <td>{{ empleado.sucursal }}</td>
+                <td>
+                    <a href="{% url 'usuarios:editar_empleado' empleado.id %}" class="btn btn-sm btn-primary">Editar</a>
+
+                    <!-- Botón para abrir el modal -->
+                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmarEliminarModal{{ empleado.id }}">
+                        Eliminar
+                    </button>
+
+                    <!-- Modal de confirmación -->
+                    <div class="modal fade" id="confirmarEliminarModal{{ empleado.id }}" tabindex="-1" aria-labelledby="modalLabel{{ empleado.id }}" aria-hidden="true">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <form method="post" action="{% url 'usuarios:lista_empleados' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="empleado_id" value="{{ empleado.id }}">
+                            <div class="modal-header">
+                              <h5 class="modal-title" id="modalLabel{{ empleado.id }}">Confirmar baja</h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                            </div>
+                            <div class="modal-body">
+                              ¿Estás seguro de que querés dar de baja al empleado <strong>{{ empleado.usuario.first_name }} {{ empleado.usuario.last_name }}</strong>?
+                            </div>
+                            <div class="modal-footer">
+                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                              <button type="submit" class="btn btn-danger">Dar de baja</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center">No hay empleados registrados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
 </div>
 
