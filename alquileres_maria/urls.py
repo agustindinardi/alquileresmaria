@@ -12,6 +12,8 @@ urlpatterns = [
     path('reservas/', include('reservas.urls')),
     path('usuarios/', include('usuarios.urls')),
     path('pagos/', include('pagos.urls')),
+
+    path('estadisticas/', include('estadisticas.urls'))
 ]
 
 if settings.DEBUG:
