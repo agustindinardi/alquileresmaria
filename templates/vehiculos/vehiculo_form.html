@@ -6,7 +6,11 @@
 
 {% block content %}
 
-<div class="container py-5"> <div class="row justify-content-center"> <div class="col-md-8"> <div class="card shadow"> <div class="card-header bg-primary text-white"> <h3 class="mb-0"> {% if form.instance.id %} Editar Vehículo: {{ form.instance.marca }} {{ form.instance.modelo }} {% else %} Registrar Nuevo Vehículo {% endif %} </h3> </div> <div class="card-body"> <form method="post" enctype="multipart/form-data" novalidate id="vehiculoForm"> {% csrf_token %}
+<div class="container py-5"> 
+    <div class="row justify-content-center"> <div class="col-md-8"> <div class="card shadow"> 
+        <div class="card-header bg-primary text-white"> <h3 class="mb-0"> {% if form.instance.id %} Editar Vehículo: {{ form.instance.marca }} {{ form.instance.modelo }} {% else %} Registrar Nuevo Vehículo {% endif %} </h3> </div> 
+            <div class="card-body formularios"> 
+                <form method="post" enctype="multipart/form-data" novalidate id="vehiculoForm"> {% csrf_token %}
                     {% if form.non_field_errors %}
                         <div class="alert alert-danger">
                             {% for error in form.non_field_errors %}
@@ -89,7 +93,7 @@
                                     <div class="text-danger small">{{ form.capacidad.errors }}</div>
                                 {% endif %}
                                 {% if form.capacidad.help_text %}
-                                    <div class="form-text">{{ form.capacidad.help_text }}</div>
+                                    <div class="form-text" style="color:#6f1c1c; font-weight: bold;">{{ form.capacidad.help_text }}</div>
                                 {% endif %}
                             </div>
 
@@ -119,7 +123,7 @@
                                     <div class="text-danger small">{{ form.kilometraje.errors }}</div>
                                 {% endif %}
                                 {% if form.kilometraje.help_text %}
-                                    <div class="form-text">{{ form.kilometraje.help_text }}</div>
+                                    <div class="form-text" style="color:#6f1c1c; font-weight: bold;">{{ form.kilometraje.help_text }}</div>
                                 {% endif %}
                             </div>
 
