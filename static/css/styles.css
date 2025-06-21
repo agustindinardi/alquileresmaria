@@ -201,6 +201,18 @@ footer {
     font-size: 0.8rem;
 }
 
+.formularios{
+    background-color: #576755;
+}
+.aIniReg{
+    color: #19369d; 
+    font-weight: bold;
+}
+.aIniReg:hover{
+    color: #134c8f; 
+    font-style: italic;
+}
+
 /* Estilos para dispositivos moviles */
 @media (max-width: 768px) {
     .jumbotron {
