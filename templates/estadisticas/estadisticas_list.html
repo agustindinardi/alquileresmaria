@@ -1,10 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Hola mundo</title>
-</head>
-<body>
+{% extends 'base.html' %}
 
-</body>
-</html>
+{% block title %}Estadisticas{% endblock %}
+
+{% block content %}
+    <h3>Ganancias por periodo</h3>
+    <img src="data:image/png;base64,{{ grafico_ganancias }}" alt="Gráfico de autos más alquilados">
+    <h3>Usuarios con mas reservas realizadas</h3>
+    <img src="data:image/png;base64,{{ grafico_usuarios }}" alt="Gráfico de autos más alquilados">
+    <h3>Modelos más alquilados</h3>
+    <img src="data:image/png;base64,{{ grafico_vehiculos}}" alt="Gráfico de autos más alquilados">
+{% endblock %}
