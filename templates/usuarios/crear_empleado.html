@@ -3,7 +3,11 @@
 {% block content %}
 
 <div class="container mt-5">
-    <h2 class="mb-4">Registrar nuevo Empleado</h2>
+    {% if titulo == "Modificar Empleado" %}
+        <h2 class="mb-4 text-light">Editar Empleado</h2>
+    {% else %}
+        <h2 class="mb-4 text-light">Registrar nuevo Empleado</h2>
+    {% endif %} 
 
     {% if messages %}
         {% for message in messages %}
@@ -14,7 +18,7 @@
     <form method="POST">
         {% csrf_token %}
         {{ form.as_p }}
-
+        
         <button type="submit" class="btn btn-primary">
             {% if titulo == "Modificar Empleado" %}
                 Actualizar Empleado

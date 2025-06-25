@@ -15,10 +15,15 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'vehiculos:lista' %}">Vehiculos</a>
                 </li>
-                {% if user.is_authenticated and not user.is_staff %}
+                {% if user.is_authenticated and not user.is_staff and not user.empleado %}
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'reservas:lista' %}">Mis Reservas</a>
                 </li>
+                {% endif %}
+                {% if user.is_authenticated and user.empleado %}
+                    <li class="nav-item btn-regClien">
+                        <a class="nav-link" href="{% url 'usuarios:registro_como_empleado' %}"><i class="fas fa-plus"></i> Cliente</a>
+                    </li>                    
                 {% endif %}
                 {% comment %} Sección Mis Empleados - Solo para administradores {% endcomment %}
                 {% if user.is_authenticated %}

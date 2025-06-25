@@ -75,6 +75,56 @@ class PerfilForm(forms.ModelForm):
             raise forms.ValidationError("El DNI debe contener solo números.")
         return dni
 
+
+# Formulario para registrar clientes desde un empleado
+class ClientePorEmpleadoForm(forms.ModelForm):
+    first_name = forms.CharField(label="Nombre", widget=forms.TextInput(attrs={'class': 'form-control'}))
+    last_name = forms.CharField(label="Apellido", widget=forms.TextInput(attrs={'class': 'form-control'}))
+    email = forms.EmailField(label="Correo Electrónico", widget=forms.EmailInput(attrs={'class': 'form-control'}))
+
+    class Meta:
+        model = Perfil
+        fields = ['dni', 'fecha_nacimiento', 'telefono']
+        widgets = {
+            'dni': forms.TextInput(attrs={'class': 'form-control'}),
+            'fecha_nacimiento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'telefono': forms.TextInput(attrs={
+                'class': 'form-control',
+                'pattern': '[0-9]+',
+                'inputmode': 'numeric',
+                'title': 'Solo se permiten números'
+            }),
+        }
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("Este correo electrónico ya está registrado.")
+        return email
+
+    def clean_dni(self):
+        dni = self.cleaned_data.get('dni')
+        if Perfil.objects.filter(dni=dni).exists():
+            raise forms.ValidationError("Este DNI ya está registrado.")
+        if not dni.isdigit():
+            raise forms.ValidationError("El DNI debe contener solo números.")
+        return dni
+
+    def clean_telefono(self):
+        tel = self.cleaned_data.get('telefono')
+        if not tel.isdigit():
+            raise forms.ValidationError("El teléfono debe contener solo números.")
+        return tel
+
+    def clean_fecha_nacimiento(self):
+        fecha = self.cleaned_data.get('fecha_nacimiento')
+        if fecha:
+            hoy = date.today()
+            edad = hoy.year - fecha.year - ((hoy.month, hoy.day) < (fecha.month, fecha.day))
+            if edad < 18:
+                raise forms.ValidationError("El cliente debe ser mayor de 18 años.")
+        return fecha
+    
 # Formulario para crear empleado
 class EmpleadoForm(forms.ModelForm):
     first_name = forms.CharField(
