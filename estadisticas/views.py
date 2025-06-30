@@ -1,10 +1,12 @@
 # Bloque de librerías estándar
 import base64
-from datetime import datetime
+import calendar
+from datetime import datetime, date, time, timedelta
 from dateutil.relativedelta import relativedelta
 from io import BytesIO
 from collections import OrderedDict
 
+from fontTools.misc.textTools import tostr
 # Bloque de librerías de terceros
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
@@ -17,7 +19,10 @@ from pagos.models import Pago
 from reservas.models import Reserva
 
 def ver_estadisticas(request):
-    grafico_ganancias = generar_reporte_ingresos()
+
+    period = request.GET.get('month')   # period = year-month por ejemplo 2024-04
+
+    grafico_ganancias = generar_reporte_ingresos(period)
     grafico_usuarios_mas_activos = generar_reporte_usuarios_mas_activos()
     grafico_autos_mas_alquilados = generar_reporte_autos_mas_alquilados()
     return render(request,
@@ -26,19 +31,20 @@ def ver_estadisticas(request):
                   )
 
 
-def generar_reporte_ingresos():
-    meses = obtener_ultimos_meses(12)
-    totales_dict = obtener_ganancias_por_mes(meses)
+def generar_reporte_ingresos(period):
 
-    categorias = list(totales_dict.keys())
+    mes = obtener_fechas_del_mes(period)
+    totales_dict = obtener_ganancias_por_mes(mes)
+
     valores = list(totales_dict.values())
+    categorias = [fecha.strftime("%d") for fecha in totales_dict.keys()]
 
     return generar_grafico_barras(
         categorias,
         valores,
-        "Ganancias de últimos 12 meses",
+        "Ganancias del: " + tostr(period),
         "Ganancias en AR$",
-        "Mes"
+        "Fecha"
     )
 
 def generar_reporte_usuarios_mas_activos():
@@ -172,20 +178,30 @@ def obtener_ultimos_meses(cant_meses):
 
     return meses
 
-def obtener_ganancias_por_mes(cant_meses):
-    meses = cant_meses
+def obtener_fechas_del_mes(periodo):
+    # Parsear el string "YYYY-MM"
+    año, mes = map(int, periodo.split("-"))
+
+    # Obtener cuántos días tiene ese mes
+    _, cantidad_dias = calendar.monthrange(año, mes)
+
+    # Crear la lista de fechas
+    return [date(año, mes, día) for día in range(1, cantidad_dias + 1)]
+
+def obtener_ganancias_por_mes(mes):
+    fechas = mes
     resultados = OrderedDict()
 
-    for fecha in sorted(meses):
-        inicio_mes = fecha.replace(day=1)
-        fin_mes = (inicio_mes + relativedelta(months=1)) - relativedelta(days=1)
+    print(fechas)
+    for fecha in sorted(fechas):
+        inicio = datetime.combine(fecha, time.min)
+        fin = inicio + timedelta(days=1)
 
-        total = Pago.objects.filter(
-            fecha_pago__date__gte=inicio_mes.date(),
-            fecha_pago__date__lte=fin_mes.date()
-        ).aggregate(total=Sum('monto'))['total'] or 0
+        total = Reserva.objects.filter(fecha_creacion__gte=inicio, fecha_creacion__lt=fin).aggregate(total=Sum('monto_pago'))['total'] or 0
 
-        resultados[inicio_mes.strftime("%Y-%m")] = total
+        resultados[fecha] = total
+
+    print(resultados)
 
     return resultados
 

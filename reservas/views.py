@@ -50,7 +50,14 @@ def crear_reserva(request, vehiculo_id):
     except Estado.DoesNotExist:
         messages.error(request, "Error: No se encontró el estado 'Disponible' en el sistema.")
         return redirect('vehiculos:lista')
-    
+
+    monto_pago = request.POST.get('monto_pago', '0')
+    try:
+        monto_pago = float(monto_pago)
+    except ValueError:
+        messages.error(request, "El monto total recibido es inválido.")
+        return redirect('vehiculos:detalle', vehiculo_id)
+
     if request.method == 'POST':
         form = ReservaForm(request.POST, vehiculo=vehiculo, usuario=request.user)
         if form.is_valid():
@@ -63,7 +70,8 @@ def crear_reserva(request, vehiculo_id):
                         fecha_inicio=form.cleaned_data['fecha_inicio'],
                         fecha_fin=form.cleaned_data['fecha_fin'],
                         dni_conductor=form.cleaned_data['dni_conductor'],
-                        tarjeta = Tarjeta.objects.get(numero=form.cleaned_data['numero_tarjeta'])
+                        tarjeta = Tarjeta.objects.get(numero=form.cleaned_data['numero_tarjeta']),
+                        monto_pago=monto_pago
                     )
                     
                     # Obtener el estado "Confirmada" para la reserva
