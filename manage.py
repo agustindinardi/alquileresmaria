@@ -82,7 +82,7 @@ for data in sucursales_data:
 print("Sucursales creadas")
 
 # Crear estados de reserva
-estados_reserva = ['Cancelada', 'Confirmada', 'Cancelada', 'Cancelada por Admin', 'Completada']
+estados_reserva = ['Cancelada', 'Confirmada', 'Cancelada por Admin', 'Activa','Completada']
 for estado in estados_reserva:
     EstadoReserva.objects.get_or_create(nombre=estado)
 print("Estados de reserva creados")

@@ -15,11 +15,28 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'vehiculos:lista' %}">Vehiculos</a>
                 </li>
+
+                {% comment %} Mis Reservas - Solo para usuarios regulares (no staff, no empleados) {% endcomment %}
                 {% if user.is_authenticated and not user.is_staff %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'reservas:lista' %}">Mis Reservas</a>
-                </li>
+                    {% comment %} Verificar que no sea empleado {% endcomment %}
+                    {% if not user.empleado or not user.empleado.activo %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'reservas:lista' %}">Mis Reservas</a>
+                    </li>
+                    {% endif %}
                 {% endif %}
+                
+                {% comment %} Reservas de Sucursal - Solo para empleados activos {% endcomment %}
+                {% if user.is_authenticated %}
+                    {% if user.empleado and user.empleado.activo %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'reservas:reservas_sucursal' %}">
+                            <i class="fas fa-calendar-check"></i> Reservas
+                        </a>
+                    </li>
+                    {% endif %}
+                {% endif %}
+
                 {% comment %} Sección Mis Empleados - Solo para administradores {% endcomment %}
                 {% if user.is_authenticated %}
                     {% if user.email == "alquileresmaria4@gmail.com" or user.is_staff or user.is_superuser %}
@@ -38,10 +55,16 @@
                         <i class="fas fa-user"></i> {{ user.username }}
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="{% url 'usuarios:perfil' %}">Mi Perfil</a></li>
-                        {% if user.is_staff %}
-                        <li><a class="dropdown-item" href="{% url 'admin:index' %}">Administracion</a></li>
+
+                        {% comment %} Opciones específicas para empleados {% endcomment %}
+                        {% if user.empleado and user.empleado.activo %}
+                        <li><a class="dropdown-item" href="{% url 'reservas:reservas_sucursal' %}">
+                            <i class="fas fa-calendar-check"></i> Reservas de Sucursal
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
                         {% endif %}
+
+
                         {% comment %} También agregar Mis Empleados en el dropdown como alternativa {% endcomment %}
                         {% if user.email == "alquileresmaria4@gmail.com" or user.is_staff or user.is_superuser %}
                         <li><a class="dropdown-item" href="{% url 'usuarios:lista_empleados' %}">
