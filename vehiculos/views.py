@@ -72,6 +72,13 @@ class VehiculoListView(ListView):
         """Personalizar la consulta para filtrar los vehículos."""
         queryset = super().get_queryset()
         
+        # NUEVO: Excluir vehículos dados de baja por defecto
+        try:
+            estado_baja = Estado.objects.get(nombre__iexact='baja')
+            queryset = queryset.exclude(estado=estado_baja)
+        except Estado.DoesNotExist:
+            pass
+        
         # Filtros de búsqueda por disponibilidad en fechas
         fecha_entrega = self.request.GET.get('fecha_entrega')
         fecha_devolucion = self.request.GET.get('fecha_devolucion')
@@ -128,7 +135,7 @@ class VehiculoListView(ListView):
             except Estado.DoesNotExist:
                 pass
             
-        # CAMBIO: Filtrar por marca usando búsqueda de texto en el campo marca del vehículo
+        # Filtrar por marca usando búsqueda de texto en el campo marca del vehículo
         marca_texto = self.request.GET.get('marca')
         if marca_texto and marca_texto.strip():
             # Búsqueda insensible a mayúsculas y minúsculas que contenga el texto
@@ -165,11 +172,12 @@ class VehiculoListView(ListView):
     def get_context_data(self, **kwargs):
         """Añadir datos adicionales al contexto."""
         context = super().get_context_data(**kwargs)
-        # CAMBIO: Ya no necesitamos pasar las marcas del modelo Marca
-        # context['marcas'] = Marca.objects.all()  # Comentado o eliminado
         context['tipos'] = TipoVehiculo.objects.all()
         context['sucursales'] = Sucursal.objects.all()
-        context['estados'] = Estado.objects.all()
+        
+        # NUEVO: Excluir estado BAJA de la lista de estados para filtros
+        estados_visibles = Estado.objects.exclude(nombre__iexact='baja')
+        context['estados'] = estados_visibles
         
         # Formulario de búsqueda con datos actuales
         initial_data = {}
@@ -191,7 +199,6 @@ class VehiculoListView(ListView):
             initial_data['capacidad'] = self.request.GET.get('capacidad')
         if self.request.GET.get('kilometraje'):
             initial_data['kilometraje'] = self.request.GET.get('kilometraje')
-        # CAMBIO: Agregar el valor de marca como texto
         if self.request.GET.get('marca'):
             initial_data['marca_texto'] = self.request.GET.get('marca')
         
@@ -209,15 +216,15 @@ class VehiculoListView(ListView):
             self.request.GET.get('tipo') or
             self.request.GET.get('capacidad') or
             self.request.GET.get('kilometraje') or
-            self.request.GET.get('marca') or  # CAMBIO: Incluir marca en búsqueda activa
+            self.request.GET.get('marca') or
             self.request.GET.get('disponible')
         )
         
-        # Estadísticas de estados
-        stats = {'total': Vehiculo.objects.count()}
+        # Estadísticas de estados (excluyendo BAJA)
+        stats = {'total': Vehiculo.objects.exclude(estado__nombre__iexact='baja').count()}
         
-        # Contar vehículos por cada estado existente
-        for estado in Estado.objects.all():
+        # Contar vehículos por cada estado existente (excepto BAJA)
+        for estado in Estado.objects.exclude(nombre__iexact='baja'):
             estado_key = estado.nombre.lower().replace(' ', '_')
             stats[estado_key] = Vehiculo.objects.filter(estado=estado).count()
         
@@ -250,6 +257,17 @@ class VehiculoDetailView(DetailView):
     template_name = 'vehiculos/vehiculo_detail.html'
     context_object_name = 'vehiculo'
 
+    def get_queryset(self):
+        """Personalizar queryset para excluir vehículos dados de baja."""
+        queryset = super().get_queryset()
+        # NUEVO: No mostrar vehículos dados de baja
+        try:
+            estado_baja = Estado.objects.get(nombre__iexact='baja')
+            queryset = queryset.exclude(estado=estado_baja)
+        except Estado.DoesNotExist:
+            pass
+        return queryset
+
     def get_context_data(self, **kwargs):
         """Añadir datos adicionales al contexto."""
         context = super().get_context_data(**kwargs)
@@ -257,7 +275,9 @@ class VehiculoDetailView(DetailView):
         # Agregar formulario para cambio de estado si el usuario es staff
         if self.request.user.is_staff:
             context['estado_form'] = VehiculoEstadoForm(instance=self.object)
-            context['estados_disponibles'] = Estado.objects.all()
+            # NUEVO: Excluir estado BAJA de los estados disponibles para cambio manual
+            estados_disponibles = Estado.objects.exclude(nombre__iexact='baja')
+            context['estados_disponibles'] = estados_disponibles
         
         return context
 
@@ -303,6 +323,17 @@ class VehiculoUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         """Comprobar si el usuario tiene permisos para actualizar vehículos."""
         return self.request.user.is_staff
 
+    def get_queryset(self):
+        """Personalizar queryset para excluir vehículos dados de baja."""
+        queryset = super().get_queryset()
+        # NUEVO: No permitir editar vehículos dados de baja
+        try:
+            estado_baja = Estado.objects.get(nombre__iexact='baja')
+            queryset = queryset.exclude(estado=estado_baja)
+        except Estado.DoesNotExist:
+            pass
+        return queryset
+
     def get_success_url(self):
         """URL a la que redirigir tras actualizar con éxito."""
         # Redirigir a la lista con filtros vacíos
@@ -322,34 +353,63 @@ class VehiculoUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
             return self.form_invalid(form)
 
 class VehiculoDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
-    """Vista para eliminar un vehículo (solo staff)."""
+    """Vista para dar de baja un vehículo (solo staff) - NO elimina físicamente."""
     model = Vehiculo
     template_name = 'vehiculos/vehiculo_confirm_delete.html' 
     success_url = reverse_lazy('vehiculos:lista')
     context_object_name = 'vehiculo'
 
     def test_func(self):
-        """Comprobar si el usuario tiene permisos para eliminar vehículos."""
+        """Comprobar si el usuario tiene permisos para dar de baja vehículos."""
         return self.request.user.is_staff
 
-    # def delete(self, request, *args, **kwargs):
+    def get_queryset(self):
+        """Personalizar queryset para excluir vehículos ya dados de baja."""
+        queryset = super().get_queryset()
+        # NUEVO: No mostrar vehículos ya dados de baja
+        try:
+            estado_baja = Estado.objects.get(nombre__iexact='baja')
+            queryset = queryset.exclude(estado=estado_baja)
+        except Estado.DoesNotExist:
+            pass
+        return queryset
+
     def post(self, request, *args, **kwargs):
-        """Personalizar el proceso de eliminación."""
+        """NUEVO: Dar de baja en lugar de eliminar físicamente."""
         vehiculo = self.get_object()
 
         # Verificar si el vehículo está reservado
-        # if vehiculo.esta_reservado():   jeje ta bien
         if Reserva.objects.filter(vehiculo=vehiculo, motivo_cancelacion__isnull=True).exists():
             messages.error(
                 request, 
-                f'No se puede eliminar el vehículo {vehiculo.marca} {vehiculo.modelo} '
+                f'No se puede dar de baja el vehículo {vehiculo.marca} {vehiculo.modelo} '
                 f'porque está actualmente reservado.'
             )
             return redirect('/vehiculos/')
         
-        estado_display = vehiculo.estado.nombre if vehiculo.estado else 'Sin estado'
-        messages.success(
-            request, 
-            f'El vehículo {vehiculo.marca} {vehiculo.modelo} ({estado_display}) ha sido eliminado.'
-        )
-        return super().delete(request, *args, **kwargs)
+        # NUEVO: Cambiar estado a BAJA en lugar de eliminar
+        try:
+            estado_baja = Estado.objects.get(nombre__iexact='baja')
+            estado_anterior = vehiculo.estado.nombre if vehiculo.estado else 'Sin estado'
+            
+            vehiculo.estado = estado_baja
+            vehiculo.save(update_fields=['estado', 'fecha_cambio_estado'])
+            
+            messages.success(
+                request, 
+                f'El vehículo {vehiculo.marca} {vehiculo.modelo} (antes {estado_anterior}) '
+                f'ha sido dado de baja correctamente.'
+            )
+            
+        except Estado.DoesNotExist:
+            messages.error(
+                request,
+                'Error: No existe el estado "BAJA" en el sistema. '
+                'Por favor, contacte al administrador para crear este estado.'
+            )
+        
+        return redirect(self.success_url)
+
+    def delete(self, request, *args, **kwargs):
+        """Sobrescribir para usar el método post personalizado."""
+        return self.post(request, *args, **kwargs)

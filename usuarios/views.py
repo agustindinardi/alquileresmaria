@@ -1,3 +1,4 @@
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout, get_user_model
 from django.contrib import messages
@@ -10,6 +11,7 @@ from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 from django.utils import timezone
 from django.conf import settings
+from django.db import transaction
 import random
 import string
 
@@ -182,59 +184,86 @@ def lista_empleados(request):
 @login_required
 @user_passes_test(administrador_requerido)
 def crear_empleado(request):
-    """Vista para crear un nuevo empleado - solo para administradores"""
     if request.method == 'POST':
         form = EmpleadoForm(request.POST)
         if form.is_valid():
+            email = form.cleaned_data['email']
+            dni = form.cleaned_data['dni']
+            User = get_user_model()
+            pswd = generar_contrasena_empleado()
+
             try:
-                pswd = generar_contrasena_empleado()
-                # Crear usuario
-                User = get_user_model()
-                user = User.objects.create_user(
-                    username=form.cleaned_data['email'],
-                    email=form.cleaned_data['email'],
+                user_existente = User.objects.filter(email=email).first()
+
+                if user_existente:
+                    # Buscar empleado asociado al usuario
+                    empleado_existente = Empleado.objects.filter(usuario=user_existente).first()
+
+                    if empleado_existente:
+                        if empleado_existente.activo:
+                            messages.error(request, 'Ya existe un usuario activo con ese correo.')
+                            return redirect('usuarios:crear_empleado')
+                        else:
+                            # Reactivar empleado y usuario
+                            user_existente.first_name = form.cleaned_data['first_name']
+                            user_existente.last_name = form.cleaned_data['last_name']
+                            user_existente.username = email
+                            user_existente.is_active = True
+                            user_existente.set_password(pswd)
+                            user_existente.save()
+
+                            empleado_existente.dni = dni
+                            empleado_existente.fecha_nacimiento = form.cleaned_data['fecha_nacimiento']
+                            empleado_existente.sucursal = form.cleaned_data['sucursal']
+                            empleado_existente.activo = True
+                            empleado_existente.save()
+
+                            send_mail(
+                                'Empleado reactivado - Alquileres María',
+                                f'Hola {user_existente.first_name},\n\n'
+                                f'Tu cuenta fue reactivada. Tus nuevas credenciales son:\n'
+                                f'Email: {email}\nContraseña: {pswd}',
+                                settings.DEFAULT_FROM_EMAIL,
+                                [email],
+                                fail_silently=False,
+                            )
+
+                            messages.success(request, f'Empleado {user_existente.first_name} reactivado con éxito.')
+                            return redirect('usuarios:lista_empleados')
+                    else:
+                        messages.error(request, 'Ese email ya está en uso por un usuario sin relación con un empleado.')
+                        return redirect('usuarios:crear_empleado')
+
+                # Si no existe usuario, creamos todo nuevo
+                nuevo_user = User.objects.create_user(
+                    username=email,
+                    email=email,
                     first_name=form.cleaned_data['first_name'],
                     last_name=form.cleaned_data['last_name'],
                     password=pswd
                 )
-                
-                # Crear empleado
                 empleado = form.save(commit=False)
-                empleado.usuario = user
+                empleado.usuario = nuevo_user
                 empleado.save()
-                
-                # Enviar contraseña por correo
-                try:
-                    send_mail(
-                        'Bienvenido a Alquileres María - Credenciales de acceso',
-                        f'Hola {user.first_name},\n\n'
-                        f'Te damos la bienvenida a Alquileres María. Has sido registrado como empleado.\n\n'
-                        f'Tus credenciales de acceso son:\n'
-                        f'Email: {user.email}\n'
-                        f'Contraseña: {pswd}\n\n'  # Nota: esto enviará el hash, necesitas guardar la contraseña antes del hash
-                        f'Por favor, cambia tu contraseña después del primer inicio de sesión.\n\n'
-                        f'Saludos,\n'
-                        f'Equipo de Alquileres María',
-                        settings.DEFAULT_FROM_EMAIL,
-                        [user.email],
-                        fail_silently=False,
-                    )
-                    
-                    messages.success(request, f'Empleado {user.first_name} {user.last_name} registrado exitosamente. Se ha enviado la contraseña por correo.')
-                    return redirect('usuarios:lista_empleados')
-                    
-                except Exception as e:
-                    # Si falla el envío del correo, eliminar el usuario y empleado creados
-                    empleado.delete()
-                    user.delete()
-                    messages.error(request, 'Error al enviar las credenciales por correo. El empleado no fue registrado.')
-                    
+
+                send_mail(
+                    'Credenciales de acceso - Alquileres María',
+                    f'Hola {nuevo_user.first_name},\n\n'
+                    f'Tu cuenta fue creada.\n\nEmail: {email}\nContraseña: {pswd}',
+                    settings.DEFAULT_FROM_EMAIL,
+                    [email],
+                    fail_silently=False,
+                )
+
+                messages.success(request, f'Empleado {nuevo_user.first_name} registrado con éxito.')
+                return redirect('usuarios:lista_empleados')
+
             except Exception as e:
-                messages.error(request, f'Error al crear el empleado: {str(e)}')
-                
+                messages.error(request, f'Error al registrar empleado: {str(e)}')
+
     else:
         form = EmpleadoForm()
-    
+
     return render(request, 'usuarios/crear_empleado.html', {
         'form': form,
         'titulo': 'Registrar Empleado'
@@ -255,7 +284,10 @@ def editar_empleado(request, empleado_id):
                 user.first_name = form.cleaned_data['first_name']
                 user.last_name = form.cleaned_data['last_name']
                 user.email = form.cleaned_data['email']
-                user.username = form.cleaned_data['email']
+                nuevo_username = form.cleaned_data['email']
+                if User.objects.exclude(pk=user.pk).filter(username=nuevo_username).exists():
+                    raise Exception("Este username ya está en uso por otro usuario.")
+                user.username = nuevo_username
                 user.save()
                 
                 # Actualizar empleado
@@ -331,3 +363,64 @@ def recuperar_contrasena(request):
         form = RecuperarContrasenaForm()
 
     return render(request, 'usuarios/recuperar_contrasena.html', {'form': form})
+# Agregar esta nueva vista a tu views.py
+
+@login_required
+@user_passes_test(administrador_requerido)
+def confirmar_baja_empleado(request):
+    """Vista AJAX para confirmar la baja de un empleado con motivo"""
+    if request.method == 'POST':
+        empleado_id = request.POST.get('empleado_id')
+        motivo_baja = request.POST.get('motivo_baja', '').strip()
+        
+        if not empleado_id:
+            return JsonResponse({'success': False, 'error': 'ID de empleado requerido'})
+        
+        if not motivo_baja:
+            return JsonResponse({'success': False, 'error': 'El motivo de la baja es obligatorio'})
+        
+        try:
+            empleado = get_object_or_404(Empleado, id=empleado_id, activo=True)
+            
+            # Dar de baja al empleado
+            empleado.activo = False
+            empleado.save()
+            
+            # Desactivar usuario
+            empleado.usuario.is_active = False
+            empleado.usuario.save()
+            
+            # Enviar email al empleado
+            try:
+                send_mail(
+                    'Notificación de Baja - Alquileres María',
+                    f'Estimado/a {empleado.usuario.first_name} {empleado.usuario.last_name},\n\n'
+                    f'Le informamos que su vinculación laboral con Alquileres María ha finalizado.\n\n'
+                    f'Motivo: {motivo_baja}\n\n'
+                    f'Agradecemos los servicios prestados y le deseamos éxitos en sus futuros proyectos.\n\n'
+                    f'Saludos cordiales,\n'
+                    f'Administración - Alquileres María',
+                    settings.DEFAULT_FROM_EMAIL,
+                    [empleado.usuario.email],
+                    fail_silently=False,
+                )
+            except Exception as e:
+                # Si falla el email, registramos el error pero no revertimos la baja
+                print(f"Error al enviar email de baja: {str(e)}")
+            
+            return JsonResponse({
+                'success': True, 
+                'message': f'Empleado {empleado.usuario.first_name} {empleado.usuario.last_name} dado de baja correctamente.'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'Error al dar de baja: {str(e)}'})
+    
+    return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+# Modificar la vista lista_empleados existente:
+@login_required
+@user_passes_test(administrador_requerido)
+def lista_empleados(request):
+    empleados = Empleado.objects.filter(activo=True)
+    return render(request, 'usuarios/lista_empleados.html', {'empleados': empleados})
