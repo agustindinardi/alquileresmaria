@@ -56,6 +56,7 @@ estados_vehiculos = [
     {'nombre': 'Disponible'},
     {'nombre': 'Reservado'},
     {'nombre': 'Mantenimiento'},
+    {'nombre': 'Baja'},
 ]
 
 for estado in estados_vehiculos:
