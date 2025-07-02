@@ -21,7 +21,10 @@ from reservas.models import Reserva
 def ver_estadisticas(request):
 
     period = request.GET.get('month')   # period = year-month por ejemplo 2024-04
-
+    if period is None:
+        now = datetime.now()
+        period = f"{now.year}-{now.month:02d}"
+    
     grafico_ganancias = generar_reporte_ingresos(period)
     grafico_usuarios_mas_activos = generar_reporte_usuarios_mas_activos()
     grafico_autos_mas_alquilados = generar_reporte_autos_mas_alquilados()
@@ -39,13 +42,16 @@ def generar_reporte_ingresos(period):
     valores = list(totales_dict.values())
     categorias = [fecha.strftime("%d") for fecha in totales_dict.keys()]
 
-    return generar_grafico_barras(
-        categorias,
-        valores,
-        "Ganancias del: " + tostr(period),
-        "Ganancias en AR$",
-        "Fecha"
-    )
+    if (all(valor == 0 for valor in valores)):
+        return generar_grafico_vacio()
+    else:
+        return generar_grafico_funcion_puntos(
+            categorias,
+            valores,
+            "Ganancias del: " + tostr(period),
+            "Ganancias en AR$",
+            "Fecha"
+        )
 
 def generar_reporte_usuarios_mas_activos():
     usuarios, cantidades = obtener_usuarios_con_mas_reservas()
@@ -148,6 +154,24 @@ def generar_grafico_funcion_puntos(categorias, valores, titulo_grafico, titulo_e
     ax.set_xlabel(titulo_eje_x)
 
     ax.set_xticklabels(categorias, rotation=45, ha="right")
+    fig.tight_layout()
+
+    # Guardamos en un buffer temporal
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    data = base64.b64encode(buf.getbuffer()).decode("ascii")
+    return data
+
+def generar_grafico_vacio():
+    fig = Figure()
+    ax = fig.subplots()
+
+    ax.axis("off")
+    ax.text(0.5, 0.5, 'No existen datos para el periodo seleccionado',
+        horizontalalignment='center',
+        verticalalignment='center',
+        fontsize=16)
+
     fig.tight_layout()
 
     # Guardamos en un buffer temporal
