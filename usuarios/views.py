@@ -354,6 +354,8 @@ def recuperar_contrasena(request):
                     fail_silently=False,
                 )
 
+                print("Contrasenia nueva: ", nueva_contrasena)
+
                 messages.success(request, 'Se ha enviado una nueva contraseña a tu correo.')
                 return redirect('usuarios:login')
             except User.DoesNotExist:

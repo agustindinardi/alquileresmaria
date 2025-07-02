@@ -46,6 +46,7 @@ class Reserva(models.Model):
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     dni_conductor = models.CharField(max_length=10, null=True)
     motivo_cancelacion = models.TextField(blank=True, null=True)
+    monto_pago = models.DecimalField(max_digits=10, decimal_places=2)
     
     def __str__(self):
         return f"Reserva de {self.vehiculo} por {self.usuario.username} ({self.fecha_inicio} - {self.fecha_fin})"

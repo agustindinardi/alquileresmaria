@@ -20,12 +20,17 @@
                     <a class="nav-link" href="{% url 'reservas:lista' %}">Mis Reservas</a>
                 </li>
                 {% endif %}
-                {% comment %} Sección Mis Empleados - Solo para administradores {% endcomment %}
+                {% comment %} Sección Mis Empleados y Estadisticas - Solo para administradores {% endcomment %}
                 {% if user.is_authenticated %}
                     {% if user.email == "alquileresmaria4@gmail.com" or user.is_staff or user.is_superuser %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'usuarios:lista_empleados' %}">
                             <i class="fas fa-users"></i> Mis Empleados
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'estadisticas:estadisticas' %}">
+                            <i class="fas fa-chart-line"></i> Estadisticas
                         </a>
                     </li>
                     {% endif %}
