@@ -17,6 +17,7 @@ from pagos.models import Pago
 from usuarios.models import Empleado
 from django.utils import timezone
 from datetime import date, timedelta
+from decimal import Decimal
 
 class ReservaListView(LoginRequiredMixin, ListView):
     model = Reserva
@@ -207,35 +208,29 @@ def admin_cancelar_reserva(request, pk):
     })
 
 class ReservaSucursalListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-    """Vista para que los empleados vean las reservas de su sucursal que requieren acción hoy"""
     model = Reserva
     template_name = 'reservas/reservas_sucursal.html'
     context_object_name = 'reservas'
     paginate_by = 20
     
     def test_func(self):
-        """Verificar que el usuario sea empleado"""
         try:
             return hasattr(self.request.user, 'empleado') and self.request.user.empleado.activo
         except:
             return False
     
     def get_queryset(self):
-        """Obtener reservas de la sucursal del empleado que requieren acción hoy"""
         try:
             empleado = self.request.user.empleado
             hoy = date.today()
             
-            # Obtener reservas que requieren acción hoy:
-            # 1. Reservas CONFIRMADAS con fecha de inicio = hoy (para entrega)
-            # 2. Reservas ACTIVAS con fecha de fin = hoy (para devolución)
             from django.db.models import Q
 
             queryset = Reserva.objects.filter(
-                vehiculo__sucursal__nombre=empleado.sucursal  # Vehículos de la sucursal del empleado
+                vehiculo__sucursal__nombre=empleado.sucursal
             ).filter(
-                Q(estado__nombre='Confirmada', fecha_inicio=hoy) |  # Entregas de hoy
-                Q(estado__nombre='Activa', fecha_fin=hoy)           # Devoluciones de hoy
+                Q(estado__nombre='Confirmada', fecha_inicio=hoy) |
+                Q(estado__nombre='Activa', fecha_fin=hoy)
             ).select_related(
                 'vehiculo', 'usuario', 'estado', 'vehiculo__sucursal'
             ).order_by('estado__nombre', 'fecha_inicio', 'vehiculo__marca', 'vehiculo__modelo')
@@ -255,7 +250,6 @@ class ReservaSucursalListView(LoginRequiredMixin, UserPassesTestMixin, ListView)
             context['sucursal_empleado'] = empleado.sucursal
             context['fecha_hoy'] = hoy
             
-            # Estadísticas específicas para hoy
             reservas_sucursal = Reserva.objects.filter(vehiculo__sucursal__nombre=empleado.sucursal)
             
             context['entregas_hoy'] = reservas_sucursal.filter(
@@ -269,12 +263,9 @@ class ReservaSucursalListView(LoginRequiredMixin, UserPassesTestMixin, ListView)
             ).count()
             
             context['total_reservas'] = context['entregas_hoy'] + context['devoluciones_hoy']
-            
-            # Estadísticas adicionales
             context['reservas_activas_total'] = reservas_sucursal.filter(estado__nombre='Activa').count()
             context['reservas_confirmadas_total'] = reservas_sucursal.filter(estado__nombre='Confirmada').count()
             
-            # NUEVAS ESTADÍSTICAS PARA RESERVAS TARDÍAS
             context['entregas_tardias'] = reservas_sucursal.filter(
                 estado__nombre='Confirmada', 
                 fecha_inicio__lt=hoy
@@ -287,7 +278,6 @@ class ReservaSucursalListView(LoginRequiredMixin, UserPassesTestMixin, ListView)
             
             context['total_tardias'] = context['entregas_tardias'].count() + context['devoluciones_tardias'].count()
             
-            # Calcular penalizaciones para devoluciones tardías
             for devolucion in context['devoluciones_tardias']:
                 dias_demora = (hoy - devolucion.fecha_fin).days
                 penalizacion = devolucion.vehiculo.precio_por_dia * 2 * dias_demora
@@ -309,9 +299,6 @@ class ReservaSucursalListView(LoginRequiredMixin, UserPassesTestMixin, ListView)
 
 @login_required
 def registrar_entrega(request, reserva_id):
-    """Vista para registrar la entrega de un vehículo (cambiar estado de Confirmada a Activa)"""
-    
-    # Verificar que el usuario sea empleado
     try:
         empleado = request.user.empleado
         if not empleado.activo:
@@ -321,63 +308,116 @@ def registrar_entrega(request, reserva_id):
         messages.error(request, "Solo los empleados pueden registrar entregas.")
         return redirect('home')
     
-    # Obtener la reserva
     reserva = get_object_or_404(Reserva, id=reserva_id)
     
-    # Verificar que la reserva pertenezca a la sucursal del empleado
     if reserva.vehiculo.sucursal.nombre != empleado.sucursal:
         messages.error(request, "Esta reserva no pertenece a su sucursal.")
         return redirect('reservas:reservas_sucursal')
     
-    # Verificar que la reserva esté en estado "Confirmada"
     if reserva.estado.nombre != 'Confirmada':
         messages.error(request, f"No se puede entregar. La reserva está en estado: {reserva.estado.nombre}")
         return redirect('reservas:reservas_sucursal')
     
-    # PERMITIR ENTREGAS TARDÍAS - No verificar fecha
+    if request.method == 'POST':
+        incluir_seguro = request.POST.get('incluir_seguro') == 'on'
+        incluir_conductor = request.POST.get('incluir_conductor') == 'on'
+        dni_conductor_adicional = request.POST.get('dni_conductor_adicional', '').strip()
+        
+        try:
+            if incluir_conductor:
+                if not dni_conductor_adicional:
+                    messages.error(request, 'Debe proporcionar el DNI del conductor adicional')
+                    return redirect('reservas:registrar_entrega', reserva_id)
+                
+                reservas_conflicto = Reserva.objects.filter(
+                    dni_conductor=dni_conductor_adicional,
+                    estado__nombre__in=['Confirmada', 'Activa'],
+                    fecha_inicio__lte=reserva.fecha_fin,
+                    fecha_fin__gte=reserva.fecha_inicio
+                ).exclude(id=reserva.id)
+                
+                if reservas_conflicto.exists():
+                    reserva_conflicto = reservas_conflicto.first()
+                    messages.error(request, f'El DNI {dni_conductor_adicional} ya tiene una reserva {reserva_conflicto.estado.nombre.lower()} del {reserva_conflicto.fecha_inicio.strftime("%d/%m/%Y")} al {reserva_conflicto.fecha_fin.strftime("%d/%m/%Y")}. No se pueden tener dos vehículos alquilados simultáneamente.')
+                    return redirect('reservas:registrar_entrega', reserva_id)
+            
+            total_original = reserva.calcular_Total()
+            costo_adicional = 0
+            
+            if incluir_seguro:
+                costo_adicional += total_original * Decimal('0.20')
+
+            if incluir_conductor:
+                costo_adicional += total_original * Decimal('0.15')
+            
+            if costo_adicional > 0 and reserva.tarjeta.saldo < costo_adicional:
+                messages.error(request, f'Saldo insuficiente en la tarjeta. Se requieren ${costo_adicional:.2f} adicionales y el saldo disponible es ${reserva.tarjeta.saldo:.2f}')
+                return redirect('reservas:registrar_entrega', reserva_id)
+            
+            with transaction.atomic():
+                try:
+                    estado_activa = EstadoReserva.objects.get(nombre='Activa')
+                except EstadoReserva.DoesNotExist:
+                    messages.error(request, 'Error: No se encontró el estado "Activa" en el sistema.')
+                    return redirect('reservas:registrar_entrega', reserva_id)
+                
+                if costo_adicional > 0:
+                    reserva.tarjeta.saldo -= costo_adicional
+                    reserva.tarjeta.save()
+                
+                Reserva.objects.filter(id=reserva.id).update(estado=estado_activa)
+                reserva.refresh_from_db()
+                
+                hoy = date.today()
+                es_tardia = reserva.fecha_inicio < hoy
+                
+                mensaje_base = f"Entrega registrada exitosamente. Vehículo {reserva.vehiculo.marca} {reserva.vehiculo.modelo} entregado a {reserva.usuario.first_name} {reserva.usuario.last_name}."
+                
+                detalles_adicionales = []
+                if incluir_seguro:
+                    detalles_adicionales.append(f"Seguro: ${total_original * Decimal('0.20'):.2f}")
+                if incluir_conductor:
+                    detalles_adicionales.append(f"Conductor adicional: ${total_original * Decimal('0.15'):.2f}")
+                
+                if detalles_adicionales:
+                    mensaje_base += f" Servicios adicionales: {', '.join(detalles_adicionales)}. Total adicional: ${costo_adicional:.2f}"
+                
+                if es_tardia:
+                    dias_retraso = (hoy - reserva.fecha_inicio).days
+                    mensaje_base += f" Entrega tardía con {dias_retraso} día(s) de retraso."
+                
+                messages.success(request, mensaje_base)
+                return redirect('reservas:reservas_sucursal')
+                
+        except Exception as e:
+            messages.error(request, f'Error al procesar la entrega: {str(e)}')
+            return redirect('reservas:registrar_entrega', reserva_id)
+    
     hoy = date.today()
     es_tardia = reserva.fecha_inicio < hoy
     
-    try:
-        with transaction.atomic():
-            # Obtener el estado "Activa"
-            try:
-                estado_activa = EstadoReserva.objects.get(nombre='Activa')
-            except EstadoReserva.DoesNotExist:
-                messages.error(request, "Error: No se encontró el estado 'Activa' en el sistema.")
-                return redirect('reservas:reservas_sucursal')
-        
-            # Cambiar el estado de la reserva usando update() para evitar validaciones del modelo
-            Reserva.objects.filter(id=reserva.id).update(estado=estado_activa)
-        
-            # Refrescar el objeto desde la base de datos
-            reserva.refresh_from_db()
-            
-            if es_tardia:
-                dias_retraso = (hoy - reserva.fecha_inicio).days
-                messages.success(
-                    request, 
-                    f"✅ Entrega TARDÍA registrada exitosamente. Reserva de {reserva.vehiculo.marca} {reserva.vehiculo.modelo} "
-                    f"(Patente: {reserva.vehiculo.patente}) para {reserva.usuario.first_name} {reserva.usuario.last_name}. "
-                    f"⚠️ Retraso de {dias_retraso} día(s)."
-                )
-            else:
-                messages.success(
-                    request, 
-                    f"✅ Entrega registrada exitosamente. Reserva de {reserva.vehiculo.marca} {reserva.vehiculo.modelo} "
-                    f"(Patente: {reserva.vehiculo.patente}) para {reserva.usuario.first_name} {reserva.usuario.last_name}."
-                )
-        
-    except Exception as e:
-        messages.error(request, f"Error al registrar la entrega: {str(e)}")
+    total_original = reserva.calcular_Total()
+    costo_seguro = total_original * Decimal('0.20')
+    costo_conductor = total_original * Decimal('0.15')
     
-    return redirect('reservas:reservas_sucursal')
+    context = {
+        'reserva': reserva,
+        'empleado': empleado,
+        'es_tardia': es_tardia,
+        'total_original': total_original,
+        'costo_seguro': costo_seguro,
+        'costo_conductor': costo_conductor,
+        'saldo_tarjeta': reserva.tarjeta.saldo,
+    }
+    
+    if es_tardia:
+        dias_retraso = (hoy - reserva.fecha_inicio).days
+        context['dias_retraso'] = dias_retraso
+    
+    return render(request, 'reservas/entrega_vehiculo.html', context)
 
 @login_required
 def registrar_devolucion_simple(request, reserva_id):
-    """Vista para registrar devolución SIN mantenimiento"""
-    
-    # Verificar que el usuario sea empleado
     try:
         empleado = request.user.empleado
         if not empleado.activo:
@@ -387,10 +427,8 @@ def registrar_devolucion_simple(request, reserva_id):
         messages.error(request, "Solo los empleados pueden registrar devoluciones.")
         return redirect('home')
     
-    # Obtener la reserva
     reserva = get_object_or_404(Reserva, id=reserva_id)
     
-    # Verificaciones básicas (sin verificar fecha para permitir tardías)
     if not _validar_devolucion_basica(reserva, empleado, request):
         return redirect('reservas:reservas_sucursal')
     
@@ -399,43 +437,34 @@ def registrar_devolucion_simple(request, reserva_id):
     
     try:
         with transaction.atomic():
-            # Obtener el estado "Completada"
             estado_completada = EstadoReserva.objects.get(nombre='Completada')
             
-            # Cambiar el estado de la reserva
             Reserva.objects.filter(id=reserva.id).update(estado=estado_completada)
             reserva.refresh_from_db()
             
-            # Procesar penalización si es tardía
             if es_tardia:
                 dias_demora = (hoy - reserva.fecha_fin).days
                 penalizacion = reserva.vehiculo.precio_por_dia * 2 * dias_demora
                 
-                # Cobrar penalización de la tarjeta
                 if reserva.tarjeta.saldo >= penalizacion:
                     reserva.tarjeta.saldo -= penalizacion
                     reserva.tarjeta.save()
                     
                     messages.success(
                         request, 
-                        f"✅ Devolución TARDÍA registrada exitosamente. Vehículo {reserva.vehiculo.marca} {reserva.vehiculo.modelo} "
-                        f"devuelto con {dias_demora} día(s) de retraso. "
-                        f"💰 Penalización cobrada: ${penalizacion:.2f}"
+                        f"Devolución TARDÍA registrada exitosamente. Vehículo {reserva.vehiculo.marca} {reserva.vehiculo.modelo} devuelto con {dias_demora} día(s) de retraso. Penalización cobrada: ${penalizacion:.2f}"
                     )
                 else:
                     messages.warning(
                         request, 
-                        f"⚠️ Devolución TARDÍA registrada pero saldo insuficiente para penalización. "
-                        f"Retraso: {dias_demora} día(s). Penalización pendiente: ${penalizacion:.2f}"
+                        f"Devolución TARDÍA registrada pero saldo insuficiente para penalización. Retraso: {dias_demora} día(s). Penalización pendiente: ${penalizacion:.2f}"
                     )
             else:
                 messages.success(
                     request, 
-                    f"✅ Devolución registrada exitosamente. Vehículo {reserva.vehiculo.marca} {reserva.vehiculo.modelo} "
-                    f"devuelto y disponible para nuevas reservas."
+                    f"Devolución registrada exitosamente. Vehículo {reserva.vehiculo.marca} {reserva.vehiculo.modelo} devuelto y disponible para nuevas reservas."
                 )
             
-            # Liberar el vehículo (cambiar a disponible)
             try:
                 estado_disponible = Estado.objects.get(nombre='Disponible')
                 Vehiculo.objects.filter(id=reserva.vehiculo.id).update(estado=estado_disponible)
@@ -451,9 +480,6 @@ def registrar_devolucion_simple(request, reserva_id):
 
 @login_required
 def registrar_devolucion_mantenimiento(request, reserva_id):
-    """Vista para registrar devolución CON mantenimiento"""
-    
-    # Verificar que el usuario sea empleado
     try:
         empleado = request.user.empleado
         if not empleado.activo:
@@ -463,10 +489,8 @@ def registrar_devolucion_mantenimiento(request, reserva_id):
         messages.error(request, "Solo los empleados pueden registrar devoluciones.")
         return redirect('home')
     
-    # Obtener la reserva
     reserva = get_object_or_404(Reserva, id=reserva_id)
     
-    # Verificaciones básicas (sin verificar fecha para permitir tardías)
     if not _validar_devolucion_basica(reserva, empleado, request):
         return redirect('reservas:reservas_sucursal')
     
@@ -475,63 +499,56 @@ def registrar_devolucion_mantenimiento(request, reserva_id):
     
     try:
         with transaction.atomic():
-            # Obtener el estado "Completada"
             estado_completada = EstadoReserva.objects.get(nombre='Completada')
             
-            # Cambiar el estado de la reserva
             Reserva.objects.filter(id=reserva.id).update(estado=estado_completada)
             reserva.refresh_from_db()
             
-            # Procesar penalización si es tardía
             if es_tardia:
                 dias_demora = (hoy - reserva.fecha_fin).days
                 penalizacion = reserva.vehiculo.precio_por_dia * 2 * dias_demora
                 
-                # Cobrar penalización de la tarjeta
                 if reserva.tarjeta.saldo >= penalizacion:
                     reserva.tarjeta.saldo -= penalizacion
                     reserva.tarjeta.save()
                     
                     messages.info(
                         request, 
-                        f"💰 Penalización por retraso cobrada: ${penalizacion:.2f} ({dias_demora} día(s) × ${reserva.vehiculo.precio_por_dia * 2:.2f})"
+                        f"Penalización por retraso cobrada: ${penalizacion:.2f} ({dias_demora} día(s) × ${reserva.vehiculo.precio_por_dia * 2:.2f})"
                     )
                 else:
                     messages.warning(
                         request, 
-                        f"⚠️ Saldo insuficiente para penalización. Penalización pendiente: ${penalizacion:.2f}"
+                        f"Saldo insuficiente para penalización. Penalización pendiente: ${penalizacion:.2f}"
                     )
             
-            # Procesar mantenimiento del vehículo
             resultado_mantenimiento = _procesar_mantenimiento_vehiculo(reserva.vehiculo, empleado)
             
             if resultado_mantenimiento['success']:
                 if es_tardia:
                     messages.success(
                         request, 
-                        f"✅ Devolución TARDÍA con mantenimiento registrada. {resultado_mantenimiento['message']}"
+                        f"Devolución TARDÍA con mantenimiento registrada. {resultado_mantenimiento['message']}"
                     )
                 else:
                     messages.success(
                         request, 
-                        f"✅ Devolución con mantenimiento registrada. {resultado_mantenimiento['message']}"
+                        f"Devolución con mantenimiento registrada. {resultado_mantenimiento['message']}"
                     )
                     
                 if resultado_mantenimiento.get('reservas_reasignadas', 0) > 0:
                     messages.info(
                         request, 
-                        f"📧 Se reasignaron {resultado_mantenimiento['reservas_reasignadas']} reservas a vehículos alternativos. "
-                        f"Los clientes han sido notificados por email."
+                        f"Se reasignaron {resultado_mantenimiento['reservas_reasignadas']} reservas a vehículos alternativos. Los clientes han sido notificados por email."
                     )
                 
                 if resultado_mantenimiento.get('reservas_canceladas', 0) > 0:
                     messages.warning(
                         request, 
-                        f"❌ Se cancelaron {resultado_mantenimiento['reservas_canceladas']} reservas por falta de vehículos alternativos. "
-                        f"Los clientes han sido notificados y reembolsados."
+                        f"Se cancelaron {resultado_mantenimiento['reservas_canceladas']} reservas por falta de vehículos alternativos. Los clientes han sido notificados y reembolsados."
                     )
             else:
-                messages.warning(request, f"⚠️ Devolución completada pero: {resultado_mantenimiento['message']}")
+                messages.warning(request, f"Devolución completada pero: {resultado_mantenimiento['message']}")
         
     except EstadoReserva.DoesNotExist:
         messages.error(request, "Error: No se encontró el estado 'Completada' en el sistema.")
@@ -541,44 +558,18 @@ def registrar_devolucion_mantenimiento(request, reserva_id):
     return redirect('reservas:reservas_sucursal')
 
 def _validar_devolucion_basica(reserva, empleado, request):
-    """Función auxiliar para validar una devolución (sin verificar fecha)"""
-    
-    # Verificar que la reserva pertenezca a la sucursal del empleado
     if reserva.vehiculo.sucursal.nombre != empleado.sucursal:
         messages.error(request, "Esta reserva no pertenece a su sucursal.")
         return False
     
-    # Verificar que la reserva esté en estado "Activa"
     if reserva.estado.nombre != 'Activa':
         messages.error(request, f"No se puede devolver. La reserva está en estado: {reserva.estado.nombre}")
-        return False
-    
-    return True
-
-def _validar_devolucion(reserva, empleado, request):
-    """Función auxiliar para validar una devolución (CON verificación de fecha - LEGACY)"""
-    
-    # Verificar que la reserva pertenezca a la sucursal del empleado
-    if reserva.vehiculo.sucursal.nombre != empleado.sucursal:
-        messages.error(request, "Esta reserva no pertenece a su sucursal.")
-        return False
-    
-    # Verificar que la reserva esté en estado "Activa"
-    if reserva.estado.nombre != 'Activa':
-        messages.error(request, f"No se puede devolver. La reserva está en estado: {reserva.estado.nombre}")
-        return False
-    
-    # Verificar que sea el día de devolución
-    if reserva.fecha_fin != date.today():
-        messages.error(request, "Solo se pueden registrar devoluciones en la fecha de fin de la reserva.")
         return False
     
     return True
 
 def _procesar_mantenimiento_vehiculo(vehiculo, empleado):
-    """Procesa el mantenimiento de un vehículo y reasigna o cancela reservas según disponibilidad"""
     try:
-        # Cambiar estado del vehículo a mantenimiento
         estado_mantenimiento, created = Estado.objects.get_or_create(
             nombre='Mantenimiento',
             defaults={'descripcion': 'Vehículo en mantenimiento'}
@@ -586,11 +577,9 @@ def _procesar_mantenimiento_vehiculo(vehiculo, empleado):
         
         Vehiculo.objects.filter(id=vehiculo.id).update(estado=estado_mantenimiento)
         
-        # Calcular fechas de mantenimiento (3 días)
-        fecha_inicio_mantenimiento = date.today() + timedelta(days=1)  # Mañana
-        fecha_fin_mantenimiento = fecha_inicio_mantenimiento + timedelta(days=2)  # 3 días total
+        fecha_inicio_mantenimiento = date.today() + timedelta(days=1)
+        fecha_fin_mantenimiento = fecha_inicio_mantenimiento + timedelta(days=2)
         
-        # Buscar reservas confirmadas afectadas
         reservas_afectadas = Reserva.objects.filter(
             vehiculo=vehiculo,
             estado__nombre='Confirmada',
@@ -602,40 +591,32 @@ def _procesar_mantenimiento_vehiculo(vehiculo, empleado):
         reservas_canceladas = 0
         
         for reserva_afectada in reservas_afectadas:
-            # Buscar vehículo alternativo
             vehiculo_alternativo = _buscar_vehiculo_alternativo(vehiculo, reserva_afectada, empleado)
             
             if vehiculo_alternativo:
-                # REASIGNAR RESERVA
                 vehiculo_original = reserva_afectada.vehiculo
                 Reserva.objects.filter(id=reserva_afectada.id).update(vehiculo=vehiculo_alternativo)
                 reserva_afectada.refresh_from_db()
                 
-                # Enviar notificación por email de cambio de vehículo
                 _enviar_notificacion_cambio_vehiculo(reserva_afectada, vehiculo_original, vehiculo_alternativo)
                 
                 reservas_reasignadas += 1
             else:
-                # NO SE ENCONTRÓ VEHÍCULO ALTERNATIVO - CANCELAR RESERVA
                 vehiculo_original = reserva_afectada.vehiculo
                 
-                # Cambiar estado a "Cancelada por Admin"
                 estado_cancelada, created = EstadoReserva.objects.get_or_create(
                     nombre='Cancelada por Admin',
                     defaults={'descripcion': 'Reserva cancelada por administrador'}
                 )
                 
-                # Actualizar reserva
                 Reserva.objects.filter(id=reserva_afectada.id).update(
                     estado=estado_cancelada,
                     motivo_cancelacion=f'Cancelada por mantenimiento del vehículo {vehiculo_original.marca} {vehiculo_original.modelo} - No hay vehículos alternativos disponibles'
                 )
                 reserva_afectada.refresh_from_db()
                 
-                # Realizar reembolso completo
                 _realizar_reembolso_completo(reserva_afectada)
                 
-                # Enviar notificación por email de cancelación
                 _enviar_notificacion_cancelacion_mantenimiento(reserva_afectada, vehiculo_original, fecha_inicio_mantenimiento, fecha_fin_mantenimiento)
                 
                 reservas_canceladas += 1
@@ -654,20 +635,17 @@ def _procesar_mantenimiento_vehiculo(vehiculo, empleado):
         }
 
 def _buscar_vehiculo_alternativo(vehiculo_original, reserva, empleado):
-    """Busca un vehículo alternativo disponible con precio mayor"""
     try:
         estado_disponible = Estado.objects.get(nombre='Disponible')
         
-        # Buscar vehículos disponibles en la misma sucursal con precio mayor
         vehiculos_alternativos = Vehiculo.objects.filter(
             sucursal__nombre=empleado.sucursal,
             estado=estado_disponible,
             precio_por_dia__gt=vehiculo_original.precio_por_dia
         ).exclude(
             id=vehiculo_original.id
-        ).order_by('precio_por_dia')  # Ordenar por precio para tomar el más barato de los más caros
+        ).order_by('precio_por_dia')
         
-        # Verificar disponibilidad en las fechas de la reserva
         for vehiculo_candidato in vehiculos_alternativos:
             reservas_conflicto = Reserva.objects.filter(
                 vehiculo=vehiculo_candidato,
@@ -685,12 +663,9 @@ def _buscar_vehiculo_alternativo(vehiculo_original, reserva, empleado):
         return None
 
 def _realizar_reembolso_completo(reserva):
-    """Realiza el reembolso completo de una reserva cancelada"""
     try:
-        # Calcular monto total a reembolsar (sin penalizaciones por cancelación administrativa)
         monto_reembolso = reserva.calcular_Total()
         
-        # Reembolsar a la tarjeta
         tarjeta = reserva.tarjeta
         tarjeta.saldo += monto_reembolso
         tarjeta.save()
@@ -702,7 +677,6 @@ def _realizar_reembolso_completo(reserva):
         return 0
 
 def _enviar_notificacion_cambio_vehiculo(reserva, vehiculo_original, vehiculo_nuevo):
-    """Envía notificación por email sobre el cambio de vehículo"""
     try:
         diferencia_precio = (vehiculo_nuevo.precio_por_dia - vehiculo_original.precio_por_dia) * (reserva.fecha_fin - reserva.fecha_inicio).days
         
@@ -731,7 +705,6 @@ def _enviar_notificacion_cambio_vehiculo(reserva, vehiculo_original, vehiculo_nu
         print(f"Error enviando email de cambio: {str(e)}")
 
 def _enviar_notificacion_cancelacion_mantenimiento(reserva, vehiculo_original, fecha_inicio_mantenimiento, fecha_fin_mantenimiento):
-    """Envía notificación por email sobre la cancelación por mantenimiento"""
     try:
         monto_reembolso = reserva.calcular_Total()
         

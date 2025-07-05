@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Entrega de Vehículo - Alquileres María{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1>Entrega de Vehículo</h1>
+            <p>Sucursal: {{ empleado.sucursal }} - {{ reserva.fecha_inicio|date:"d/m/Y" }}</p>
+            <a href="{% url 'reservas:reservas_sucursal' %}" class="btn btn-secondary">Volver</a>
+        </div>
+    </div>
+
+    <!-- Alerta de entrega tardía -->
+    {% if es_tardia %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning">
+                <h5>⚠️ Entrega Tardía</h5>
+                <p>Esta entrega tiene un retraso de <strong>{{ dias_retraso }} día(s)</strong>. 
+                La fecha programada era el {{ reserva.fecha_inicio|date:"d/m/Y" }}.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Información de la reserva -->
+    <div class="row mb-4">
+        <!-- Vehículo -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5>Vehículo</h5>
+                </div>
+                <div class="card-body">
+                    <h4>{{ reserva.vehiculo.marca }} {{ reserva.vehiculo.modelo }}</h4>
+                    <p><strong>Patente:</strong> {{ reserva.vehiculo.patente }}</p>
+                    <p><strong>Capacidad:</strong> {{ reserva.vehiculo.capacidad }} pasajeros</p>
+                    <p><strong>Precio/día:</strong> ${{ reserva.vehiculo.precio_por_dia|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cliente -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5>Cliente</h5>
+                </div>
+                <div class="card-body">
+                    <h4>{{ reserva.usuario.first_name }} {{ reserva.usuario.last_name }}</h4>
+                    <p><strong>Email:</strong> {{ reserva.usuario.email }}</p>
+                    <p><strong>DNI Conductor:</strong> {{ reserva.dni_conductor }}</p>
+                    <p><strong>Tarjeta:</strong> **** {{ reserva.tarjeta.numero|slice:"-4:" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reserva -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5>Reserva</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Inicio:</strong> {{ reserva.fecha_inicio|date:"d/m/Y" }}</p>
+                    <p><strong>Fin:</strong> {{ reserva.fecha_fin|date:"d/m/Y" }}</p>
+                    <p><strong>Total Original:</strong> ${{ total_original|floatformat:2 }}</p>
+                    <p><strong>Saldo Disponible:</strong> ${{ saldo_tarjeta|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de entrega -->
+    <form method="post">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-warning">
+                        <h5>Servicios Adicionales Disponibles</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Seguro -->
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-1">
+                                        <input class="form-check-input" type="checkbox" name="incluir_seguro" id="incluir_seguro">
+                                    </div>
+                                    <div class="col-md-8">
+                                        <h5>Seguro Completo</h5>
+                                        <p class="text-muted">Cobertura total contra daños, robo y terceros. Incluye asistencia 24/7.</p>
+                                    </div>
+                                    <div class="col-md-3 text-end">
+                                        <span class="badge bg-primary">+${{ costo_seguro|floatformat:2 }}</span>
+                                        <br>
+                                        <small class="text-muted">20% del total</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Conductor adicional -->
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-1">
+                                        <input class="form-check-input" type="checkbox" name="incluir_conductor" id="incluir_conductor" onchange="toggleDniField()">
+                                    </div>
+                                    <div class="col-md-8">
+                                        <h5>Conductor Adicional</h5>
+                                        <p class="text-muted">Permite que otra persona autorizada conduzca el vehículo.</p>
+                                    </div>
+                                    <div class="col-md-3 text-end">
+                                        <span class="badge bg-success">+${{ costo_conductor|floatformat:2 }}</span>
+                                        <br>
+                                        <small class="text-muted">15% del total</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Campo DNI conductor adicional -->
+                                <div class="mt-3" id="dni-conductor-container" style="display: none;">
+                                    <label for="dni_conductor_adicional" class="form-label">DNI del Conductor Adicional</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           name="dni_conductor_adicional"
+                                           id="dni_conductor_adicional" 
+                                           placeholder="Ingrese el DNI del conductor adicional"
+                                           maxlength="10">
+                                    <small class="form-text text-muted">Se verificará que no tenga reservas activas en las mismas fechas.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">
+                        <h5>Resumen de Costos</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Total Original:</span>
+                            <span>${{ total_original|floatformat:2 }}</span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Seguro (si se selecciona):</span>
+                            <span>+${{ costo_seguro|floatformat:2 }}</span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Conductor Adicional (si se selecciona):</span>
+                            <span>+${{ costo_conductor|floatformat:2 }}</span>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="d-flex justify-content-between mb-3">
+                            <strong>Saldo Disponible:</strong>
+                            <strong>${{ saldo_tarjeta|floatformat:2 }}</strong>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <small>
+                                <strong>Máximo adicional posible:</strong> ${{ saldo_tarjeta|floatformat:2 }}
+                            </small>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success">
+                                Confirmar Entrega
+                            </button>
+                            <a href="{% url 'reservas:reservas_sucursal' %}" class="btn btn-secondary">
+                                Cancelar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function toggleDniField() {
+    var checkbox = document.getElementById('incluir_conductor');
+    var container = document.getElementById('dni-conductor-container');
+    var input = document.getElementById('dni_conductor_adicional');
+    
+    if (checkbox.checked) {
+        container.style.display = 'block';
+    } else {
+        container.style.display = 'none';
+        input.value = '';
+    }
+}
+</script>
+{% endblock %}

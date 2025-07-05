@@ -100,7 +100,7 @@ class Reserva(models.Model):
         if hasattr(self, 'dni_conductor') and self.dni_conductor:
             reservas_dni = Reserva.objects.filter(
                 dni_conductor=self.dni_conductor,
-                estado__nombre='Confirmada'
+                estado__nombre='Confirmada' and 'Activa'
             ).exclude(id=self.id)  # Excluir la reserva actual (para ediciones)
             
             for reserva in reservas_dni:
