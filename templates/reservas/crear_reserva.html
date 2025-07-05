@@ -32,9 +32,6 @@
                         <li class="list-group-item info-body"><i class="fas fa-gauge me-2 iReserva"></i>{{ vehiculo.kilometraje }} km</li>
                         <li class="list-group-item info-body"><strong class="strong-body">Patente:</strong> {{ vehiculo.patente }}</li>
 
-                        <li class="list-group-item info-body" id="datosReserva" data-precio="{{ vehiculo.precio_por_dia|default:0|floatformat:2 }}">
-                            <strong class="strong-body">Total a pagar: </strong><span id="totalAPagar">0</span>
-                        </li>
 
                         <li class="list-group-item info-body"><strong class="strong-body">Reembolso:</strong> {{ vehiculo.politica_reembolso }}</li>
                         <li class="list-group-item info-description"><strong>Descripción:</strong>
@@ -135,6 +132,14 @@
                                     {% for err in form.vencimiento_tarjeta.errors %}
                                         <div class="text-danger small">{{ err }}</div>
                                     {% endfor %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <li class="list-group-item info-body" id="datosReserva" data-precio="{{ vehiculo.precio_por_dia|default:0|floatformat:2 }}">
+                                      <strong class="strong-body">Total a pagar: </strong>
+                                      <span id="totalAPagarTexto">0</span>
+                                      <input type="hidden" name="monto_pago" id="totalAPagarInput" value="0">
+                                    </li>
                                 </div>
 
                             </div>
@@ -335,20 +340,21 @@ document.addEventListener('DOMContentLoaded', function() {
     function calcular_Total(){
         const inicio = new Date(fechaInicioHidden.value);
         const fin = new Date(fechaFinHidden.value);
-        console.log("Inicio:", inicio, "Fin:", fin);
-        console.log("Precio por día (parseado):", precioPorDia);
-
+        const totalTexto = document.getElementById("totalAPagarTexto");
+        const totalInput = document.getElementById("totalAPagarInput");
 
         if (fechaInicioHidden.value && fechaFinHidden.value && fin >= inicio && !isNaN(precioPorDia)) {
-            const diffTime = Math.abs(fin - inicio);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 || 1;
-            const total = diffDays * precioPorDia;
-            console.log("Días:", diffDays, "Total:", total);
-            totalAPagar.innerText = `$${total.toFixed(2)}`;
+        const diffTime = Math.abs(fin - inicio);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 || 1;
+        const total = diffDays * precioPorDia;
+        totalTexto.innerText = `$${total.toFixed(2)}`;
+        totalInput.value = total.toFixed(2);
         } else {
-            totalAPagar.textContent = "0";
+        totalTexto.textContent = "0";
+        totalInput.value = "0";
         }
     }
+
 
     fechaInicioHidden.addEventListener("change", calcular_Total);
     fechaFinHidden.addEventListener("change", calcular_Total);

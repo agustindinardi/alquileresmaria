@@ -27,7 +27,7 @@ class Empleado(models.Model):
     ]
     
     usuario = models.OneToOneField(User, on_delete=models.CASCADE)
-    dni = models.CharField(max_length=20, unique=True, verbose_name="DNI")
+    dni = models.CharField(max_length=20, verbose_name="DNI")
     fecha_nacimiento = models.DateField(verbose_name="Fecha de Nacimiento")
     sucursal = models.CharField(max_length=50, choices=SUCURSALES_CHOICES, verbose_name="Sucursal")
     fecha_creacion = models.DateTimeField(auto_now_add=True)

@@ -68,7 +68,7 @@ class Vehiculo(models.Model):
     politica_reembolso = models.ForeignKey(PoliticaReembolso, on_delete=models.SET_NULL, null=True, blank=True)
     imagen = models.ImageField(upload_to='vehiculos/', blank=True, null=True)
 
-    # Nuevo: estado como relación
+    # Estado como relación
     estado = models.ForeignKey(Estado, on_delete=models.SET_NULL, null=True, blank=True)
 
     sucursal = models.ForeignKey(Sucursal, on_delete=models.SET_NULL, null=True, blank=True)
@@ -86,6 +86,10 @@ class Vehiculo(models.Model):
 
     def en_mantenimiento(self):
         return self.estado and self.estado.nombre.lower() == "mantenimiento"
+    
+    # NUEVO: Método para verificar si está dado de baja
+    def esta_dado_de_baja(self):
+        return self.estado and self.estado.nombre.lower() == "baja"
 
     # Métodos de cambio de estado
     def cambiar_estado(self, nuevo_estado_nombre, save=True):
@@ -101,7 +105,7 @@ class Vehiculo(models.Model):
 
     def reservar(self):
         if self.disponible():
-            return self.cambiar_estado("disponible")
+            return self.cambiar_estado("reservado")
         return False
 
     def liberar(self):
@@ -113,12 +117,27 @@ class Vehiculo(models.Model):
         if self.disponible():
             return self.cambiar_estado("mantenimiento")
         return False
+    
+    # NUEVO: Método para dar de baja
+    def dar_de_baja(self):
+        """Cambia el estado del vehículo a BAJA."""
+        if not self.esta_dado_de_baja():
+            return self.cambiar_estado("baja")
+        return False
+    
+    # NUEVO: Método para reactivar (cambiar de BAJA a DISPONIBLE)
+    def reactivar(self):
+        """Reactiva un vehículo dado de baja, cambiándolo a disponible."""
+        if self.esta_dado_de_baja():
+            return self.cambiar_estado("disponible")
+        return False
 
     def get_estado_color_class(self):
         color_map = {
             "disponible": 'bg-success',
             "reservado": 'bg-warning',
             "mantenimiento": 'bg-danger',
+            "baja": 'bg-dark',  # NUEVO: Color para estado BAJA
         }
         return color_map.get(self.estado.nombre.lower(), 'bg-secondary') if self.estado else 'bg-secondary'
 
@@ -127,6 +146,7 @@ class Vehiculo(models.Model):
             "disponible": '✅',
             "reservado": '📅',
             "mantenimiento": '🔧',
+            "baja": '🚫',  # NUEVO: Icono para estado BAJA
         }
         if self.estado:
             nombre = self.estado.nombre.capitalize()
