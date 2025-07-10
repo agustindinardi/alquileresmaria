@@ -15,7 +15,7 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'vehiculos:lista' %}">Vehiculos</a>
                 </li>
-                {% if user.is_authenticated and not user.is_staff %}
+                {% if user.is_authenticated and not user.is_staff and not user.empleado %}
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'reservas:lista' %}">Mis Reservas</a>
                 </li>

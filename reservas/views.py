@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.urls import reverse
 from django.db import transaction
 from .models import Reserva, EstadoReserva
-from .forms import ReservaForm, CancelarReservaForm
+from .forms import ReservaForm, CancelarReservaForm, ReservaEmpleadoForm
 from vehiculos.models import Vehiculo, Estado, PoliticaReembolso
 from reservas.models import Tarjeta
 from pagos.models import Pago
@@ -112,6 +112,70 @@ def crear_reserva(request, vehiculo_id):
         'form': form,
         'vehiculo': vehiculo
     })
+
+@login_required
+def crear_reserva_Emple(request, vehiculo_id):
+    if not hasattr(request.user, 'empleado'):
+        return redirect('home')  # Solo empleados acceden
+
+    try:
+        estado_disponible = Estado.objects.get(nombre__iexact='disponible')
+        vehiculo = get_object_or_404(Vehiculo, id=vehiculo_id, estado=estado_disponible)
+    except Estado.DoesNotExist:
+        messages.error(request, "Error: No se encontró el estado 'Disponible'.")
+        return redirect('vehiculos:lista')
+
+    monto_pago = request.POST.get('monto_pago', '0')
+    try:
+        monto_pago = float(monto_pago)
+    except ValueError:
+        messages.error(request, "El monto recibido no es válido.")
+        return redirect('vehiculos:detalle', vehiculo_id)
+
+    if request.method == 'POST':
+        form = ReservaEmpleadoForm(request.POST, vehiculo=vehiculo, usuario=request.user)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    reserva = Reserva(
+                        vehiculo=vehiculo,
+                        usuario=form.usuario_cliente,
+                        fecha_inicio=form.cleaned_data['fecha_inicio'],
+                        fecha_fin=form.cleaned_data['fecha_fin'],
+                        dni_conductor=form.cleaned_data['dni_conductor'],
+                        tarjeta=form.tarjeta_validada,
+                        monto_pago=monto_pago
+                    )
+
+                    estado_confirmada, _ = EstadoReserva.objects.get_or_create(
+                        nombre='Confirmada',
+                        defaults={'descripcion': 'Reserva confirmada y activa'}
+                    )
+                    reserva.estado = estado_confirmada
+                    reserva.save()
+
+                    tarjeta = form.tarjeta_validada
+                    tarjeta.saldo -= form.total_a_cobrar
+                    tarjeta.save()
+
+                    if vehiculo.reservar():
+                        messages.success(request, f"Reserva creada exitosamente para {form.usuario_cliente.username}.")
+                        return redirect('home')
+                    else:
+                        reserva.delete()
+                        messages.error(request, "No se pudo completar la reserva.")
+                        return redirect('home')
+            except Exception as e:
+                messages.error(request, f"Error al crear la reserva: {str(e)}")
+                return redirect('vehiculos:detalle', vehiculo_id)
+    else:
+        form = ReservaEmpleadoForm(vehiculo=vehiculo, usuario=request.user)
+
+    return render(request, 'reservas/crear_como_Empleado.html', {
+        'form': form,
+        'vehiculo': vehiculo
+    })
+
 
 @login_required
 def cancelar_reserva(request, pk):
