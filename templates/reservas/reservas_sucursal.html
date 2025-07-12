@@ -142,11 +142,11 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h1 class="h3 mb-0">
+                    <h1 class="h3 mb-0 text-light">
                         <i class="fas fa-calendar-check me-2"></i>
                         Reservas de Sucursal - Panel de Control
-                    </h1>
-                    <p class="text-muted mb-0">
+                    </h1><br>
+                    <p class="mb-0" style="color: #d0d0d0;">
                         {% if sucursal_empleado %}
                             {{ sucursal_empleado }} - {{ fecha_hoy|date:"d/m/Y" }}
                         {% else %}
@@ -237,7 +237,7 @@
     <!-- SECCIÓN: ACCIONES DE HOY -->
     <div class="row">
         <div class="col-12">
-            <h2 class="h4 mb-3">
+            <h2 class="h4 mb-3 text-light">
                 <i class="fas fa-calendar-day me-2 text-primary"></i>
                 Acciones Programadas para Hoy
             </h2>
