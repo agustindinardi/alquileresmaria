@@ -358,8 +358,9 @@ def registrar_entrega(request, reserva_id):
             if incluir_conductor:
                 costo_adicional += total_original * Decimal('0.15')
             
+            # Validar saldo sin mostrarlo al usuario
             if costo_adicional > 0 and reserva.tarjeta.saldo < costo_adicional:
-                messages.error(request, f'Saldo insuficiente en la tarjeta. Se requieren ${costo_adicional:.2f} adicionales y el saldo disponible es ${reserva.tarjeta.saldo:.2f}')
+                messages.error(request, f'Saldo insuficiente en la tarjeta para procesar los servicios adicionales solicitados (${costo_adicional:.2f}). Por favor, contacte al cliente para actualizar el método de pago.')
                 return redirect('reservas:registrar_entrega', reserva_id)
             
             with transaction.atomic():
@@ -379,20 +380,20 @@ def registrar_entrega(request, reserva_id):
                 hoy = date.today()
                 es_tardia = reserva.fecha_inicio < hoy
                 
-                mensaje_base = f"Entrega registrada exitosamente. Vehículo {reserva.vehiculo.marca} {reserva.vehiculo.modelo} entregado a {reserva.usuario.first_name} {reserva.usuario.last_name}."
+                mensaje_base = f"✅ Entrega registrada exitosamente. Vehículo {reserva.vehiculo.marca} {reserva.vehiculo.modelo} entregado a {reserva.usuario.first_name} {reserva.usuario.last_name}."
                 
                 detalles_adicionales = []
                 if incluir_seguro:
-                    detalles_adicionales.append(f"Seguro: ${total_original * Decimal('0.20'):.2f}")
+                    detalles_adicionales.append(f"Seguro completo: ${total_original * Decimal('0.20'):.2f}")
                 if incluir_conductor:
                     detalles_adicionales.append(f"Conductor adicional: ${total_original * Decimal('0.15'):.2f}")
                 
                 if detalles_adicionales:
-                    mensaje_base += f" Servicios adicionales: {', '.join(detalles_adicionales)}. Total adicional: ${costo_adicional:.2f}"
+                    mensaje_base += f" 💳 Servicios adicionales cobrados: {', '.join(detalles_adicionales)}. Total adicional: ${costo_adicional:.2f}"
                 
                 if es_tardia:
                     dias_retraso = (hoy - reserva.fecha_inicio).days
-                    mensaje_base += f" Entrega tardía con {dias_retraso} día(s) de retraso."
+                    mensaje_base += f" ⚠️ Entrega tardía con {dias_retraso} día(s) de retraso."
                 
                 messages.success(request, mensaje_base)
                 return redirect('reservas:reservas_sucursal')
@@ -415,7 +416,6 @@ def registrar_entrega(request, reserva_id):
         'total_original': total_original,
         'costo_seguro': costo_seguro,
         'costo_conductor': costo_conductor,
-        'saldo_tarjeta': reserva.tarjeta.saldo,
     }
     
     if es_tardia:

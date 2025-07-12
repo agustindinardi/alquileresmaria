@@ -68,8 +68,8 @@
                 <div class="card-body">
                     <p><strong>Inicio:</strong> {{ reserva.fecha_inicio|date:"d/m/Y" }}</p>
                     <p><strong>Fin:</strong> {{ reserva.fecha_fin|date:"d/m/Y" }}</p>
-                    <p><strong>Total Original:</strong> ${{ total_original|floatformat:2 }}</p>
-                    <p><strong>Saldo Disponible:</strong> ${{ saldo_tarjeta|floatformat:2 }}</p>
+                    <p><strong>Total Reserva:</strong> ${{ total_original|floatformat:2 }} <span class="badge bg-success">PAGADO</span></p>
+                    <p><strong>Estado:</strong> <span class="badge bg-warning">{{ reserva.estado.nombre }}</span></p>
                 </div>
             </div>
         </div>
@@ -90,7 +90,7 @@
                             <div class="card-body">
                                 <div class="row align-items-center">
                                     <div class="col-md-1">
-                                        <input class="form-check-input" type="checkbox" name="incluir_seguro" id="incluir_seguro">
+                                        <input class="form-check-input" type="checkbox" name="incluir_seguro" id="incluir_seguro" onchange="calcularTotal()">
                                     </div>
                                     <div class="col-md-8">
                                         <h5>Seguro Completo</h5>
@@ -110,7 +110,7 @@
                             <div class="card-body">
                                 <div class="row align-items-center">
                                     <div class="col-md-1">
-                                        <input class="form-check-input" type="checkbox" name="incluir_conductor" id="incluir_conductor" onchange="toggleDniField()">
+                                        <input class="form-check-input" type="checkbox" name="incluir_conductor" id="incluir_conductor" onchange="toggleDniField(); calcularTotal();">
                                     </div>
                                     <div class="col-md-8">
                                         <h5>Conductor Adicional</h5>
@@ -144,42 +144,42 @@
             <div class="col-md-4">
                 <div class="card">
                     <div class="card-header bg-dark text-white">
-                        <h5>Resumen de Costos</h5>
+                        <h5>Servicios Adicionales</h5>
                     </div>
                     <div class="card-body">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Total Original:</span>
-                            <span>${{ total_original|floatformat:2 }}</span>
+                        
+                        
+                        <div class="d-flex justify-content-between mb-2" id="seguro-line" style="display: none !important;">
+                            <span>Seguro Completo:</span>
+                            <span id="seguro-costo">${{ costo_seguro|floatformat:2 }}</span>
                         </div>
                         
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Seguro (si se selecciona):</span>
-                            <span>+${{ costo_seguro|floatformat:2 }}</span>
+                        <div class="d-flex justify-content-between mb-2" id="conductor-line" style="display: none !important;">
+                            <span>Conductor Adicional:</span>
+                            <span id="conductor-costo">${{ costo_conductor|floatformat:2 }}</span>
                         </div>
                         
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Conductor Adicional (si se selecciona):</span>
-                            <span>+${{ costo_conductor|floatformat:2 }}</span>
+                        <div id="sin-servicios" class="text-center text-muted py-3">
+                            <i class="fas fa-info-circle"></i>
+                            <p class="mb-0">No hay servicios adicionales seleccionados</p>
                         </div>
                         
-                        <hr>
+                        <hr id="separador" style="display: none;">
                         
-                        <div class="d-flex justify-content-between mb-3">
-                            <strong>Saldo Disponible:</strong>
-                            <strong>${{ saldo_tarjeta|floatformat:2 }}</strong>
+                        <div class="d-flex justify-content-between mb-3" id="total-adicional-container" style="display: none !important;">
+                            <strong>Total Adicional a Cobrar:</strong>
+                            <strong id="total-final" class="text-danger">$0.00</strong>
                         </div>
                         
-                        <div class="alert alert-info">
-                            <small>
-                                <strong>Máximo adicional posible:</strong> ${{ saldo_tarjeta|floatformat:2 }}
-                            </small>
-                        </div>
+                        
                         
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-success">
+                                <i class></i>
                                 Confirmar Entrega
                             </button>
                             <a href="{% url 'reservas:reservas_sucursal' %}" class="btn btn-secondary">
+                                <i class></i>
                                 Cancelar
                             </a>
                         </div>
@@ -189,6 +189,10 @@
         </div>
     </form>
 </div>
+
+<!-- Variables ocultas para JavaScript -->
+<input type="hidden" id="costo-seguro-value" value="{{ costo_seguro }}">
+<input type="hidden" id="costo-conductor-value" value="{{ costo_conductor }}">
 
 <script>
 function toggleDniField() {
@@ -203,5 +207,64 @@ function toggleDniField() {
         input.value = '';
     }
 }
+
+function calcularTotal() {
+    // Obtener valores desde inputs ocultos
+    var costoSeguro = parseFloat(document.getElementById('costo-seguro-value').value);
+    var costoConductor = parseFloat(document.getElementById('costo-conductor-value').value);
+    
+    var checkSeguro = document.getElementById('incluir_seguro');
+    var checkConductor = document.getElementById('incluir_conductor');
+    var seguroLine = document.getElementById('seguro-line');
+    var conductorLine = document.getElementById('conductor-line');
+    var totalFinal = document.getElementById('total-final');
+    var totalContainer = document.getElementById('total-adicional-container');
+    var sinServicios = document.getElementById('sin-servicios');
+    var separador = document.getElementById('separador');
+    
+    var totalAdicional = 0;
+    var hayServicios = false;
+    
+    // Mostrar/ocultar líneas de costo y sumar al total
+    if (checkSeguro && checkSeguro.checked) {
+        seguroLine.style.display = 'flex';
+        seguroLine.style.setProperty('display', 'flex', 'important');
+        totalAdicional += costoSeguro;
+        hayServicios = true;
+    } else {
+        seguroLine.style.display = 'none';
+        seguroLine.style.setProperty('display', 'none', 'important');
+    }
+    
+    if (checkConductor && checkConductor.checked) {
+        conductorLine.style.display = 'flex';
+        conductorLine.style.setProperty('display', 'flex', 'important');
+        totalAdicional += costoConductor;
+        hayServicios = true;
+    } else {
+        conductorLine.style.display = 'none';
+        conductorLine.style.setProperty('display', 'none', 'important');
+    }
+    
+    // Mostrar/ocultar elementos según si hay servicios
+    if (hayServicios) {
+        totalContainer.style.display = 'flex';
+        totalContainer.style.setProperty('display', 'flex', 'important');
+        separador.style.display = 'block';
+        sinServicios.style.display = 'none';
+        totalFinal.textContent = '$' + totalAdicional.toFixed(2);
+    } else {
+        totalContainer.style.display = 'none';
+        totalContainer.style.setProperty('display', 'none', 'important');
+        separador.style.display = 'none';
+        sinServicios.style.display = 'block';
+        totalFinal.textContent = '$0.00';
+    }
+}
+
+// Inicializar al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    calcularTotal();
+});
 </script>
 {% endblock %}
