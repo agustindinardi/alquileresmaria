@@ -7,6 +7,7 @@
 
 {% block content %}
 
+
 {% block title %}<h2 class="text-light">Mis Reservas</h2> <br><br>{% endblock %}
 
 {% if user.is_authenticated %}
@@ -84,15 +85,13 @@
         </div>
 
     {% else %}
-        <div class="text-light">
-            <p>No cuenta actualmente con un historial de vehículos alquilados</p>
-            <br><br><br>
-            <p>Visite nuestro <strong><a href="{% url 'vehiculos:lista' %}">Catálogo</a></strong></p> 
-        </div>
-        
+
+        <p class="text-light">No cuenta actualmente con un historial de vehículos alquilados</p>
+        <br><br><br>
+        <p class="text-light">Visite nuestro <strong><a href="{% url 'vehiculos:lista' %}">Catálogo</a></strong></p>
     {% endif %}
 {% else %}
-    <p>Para acceder a esta sección primero debe</p> 
+    <p class="text-light">Para acceder a esta sección primero debe</p> 
     <strong><a class="nav-link" href="{% url 'usuarios:login' %}">Iniciar Sesión</a></strong>
 {% endif %}
 {% endblock %}

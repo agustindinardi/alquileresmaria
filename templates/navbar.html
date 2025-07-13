@@ -24,6 +24,7 @@
                         <a class="nav-link" href="{% url 'reservas:lista' %}">Mis Reservas</a>
                     </li>
                     {% endif %}
+
                 {% endif %}
                 {% if user.is_authenticated and user.empleado %}
                     <li class="nav-item btn-regClien">
