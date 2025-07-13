@@ -25,7 +25,12 @@
                     </li>
                     {% endif %}
                 {% endif %}
-                
+                {% if user.is_authenticated and user.empleado %}
+                    <li class="nav-item btn-regClien">
+                        <a class="nav-link" href="{% url 'usuarios:registro_como_empleado' %}"><i class="fas fa-plus"></i> Cliente</a>
+                    </li>                    
+                {% endif %}      
+          
                 {% comment %} Reservas de Sucursal - Solo para empleados activos {% endcomment %}
                 {% if user.is_authenticated %}
                     {% if user.empleado and user.empleado.activo %}

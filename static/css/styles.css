@@ -8,6 +8,13 @@ body {
     /*background-color: #f4eeeeee;*/ /*Fondo claro*/
 }
 
+/* Estilo para la lista de errores que genera Django */
+.errorlist {
+    color: #ff4d4d; /* Establece el color del texto a rojo */
+    font-size: 0.9em; /* Opcional: hace el texto un poco más pequeño */
+    margin-top: 5px; /* Opcional: agrega un pequeño margen superior */
+}
+
 .container {
     flex: 1;
 }
@@ -79,6 +86,14 @@ body {
     font-size: 18px;
     color: #ffffff;
     margin-left: 5px;
+}
+
+.btn-regClien{
+    background-color: #167e4e; 
+    border-radius: 5px;
+}
+.btn-regClien:hover{
+    background-color: #147347; 
 }
 
 .Form-Bus-Main {

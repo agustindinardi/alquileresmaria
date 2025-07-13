@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<div class="container mt-5">
+    <h2 class="mb-4 text-light">Registrar nuevo Cliente</h2>
+
+   <form method="POST">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            {{ form.first_name.label_tag }}
+            {{ form.first_name }}
+            <div class="text-danger small">
+                {{ form.first_name.errors }}
+            </div>
+            
+        </div>
+
+        <div class="mb-3">
+            {{ form.last_name.label_tag }}
+            {{ form.last_name }}
+            <div class="text-danger small">
+                {{ form.last_name.errors }}
+            </div>
+            
+        </div>
+
+        <div class="mb-3">
+            {{ form.email.label_tag }}
+            {{ form.email }}
+            <div class="text-danger small">
+                {{ form.email.errors }}
+            </div>
+            
+        </div>
+
+        <div class="mb-3">
+            {{ form.dni.label_tag }}
+            {{ form.dni }}
+            <div class="text-danger small">
+                {{ form.dni.errors }}
+            </div>
+            
+        </div>
+
+        <div class="mb-3">
+            {{ form.fecha_nacimiento.label_tag }}
+            {{ form.fecha_nacimiento }}
+            <div class="text-danger small">
+                {{ form.fecha_nacimiento.errors }}
+            </div>
+            
+        </div>
+
+        <div class="mb-3">
+            {{ form.telefono.label_tag }}
+            {{ form.telefono }}
+            <div class="text-danger small">
+                {{ form.telefono.errors }}
+            </div>
+            
+        </div>
+
+        <button type="submit" class="btn btn-success">Registrar Cliente</button>
+        <a href="{% url 'home' %}" class="btn btn-secondary">Volver</a>
+    </form>
+</div>
+
+{% endblock %}
