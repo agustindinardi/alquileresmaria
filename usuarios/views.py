@@ -192,6 +192,7 @@ def crear_empleado(request):
         if form.is_valid():
             email = form.cleaned_data['email']
             dni = form.cleaned_data['dni']
+            sucursal = form.cleaned_data['sucursal']  # Obtener la sucursal
             User = get_user_model()
             pswd = generar_contrasena_empleado()
 
@@ -217,7 +218,7 @@ def crear_empleado(request):
 
                             empleado_existente.dni = dni
                             empleado_existente.fecha_nacimiento = form.cleaned_data['fecha_nacimiento']
-                            empleado_existente.sucursal = form.cleaned_data['sucursal']
+                            empleado_existente.sucursal = sucursal
                             empleado_existente.activo = True
                             empleado_existente.save()
 
@@ -225,7 +226,12 @@ def crear_empleado(request):
                                 'Empleado reactivado - Alquileres María',
                                 f'Hola {user_existente.first_name},\n\n'
                                 f'Tu cuenta fue reactivada. Tus nuevas credenciales son:\n'
-                                f'Email: {email}\nContraseña: {pswd}',
+                                f'Email: {email}\n'
+                                f'Contraseña: {pswd}\n'
+                                f'Sucursal asignada: {sucursal}\n\n'
+                                f'Por favor, inicia sesión con estas credenciales.\n\n'
+                                f'Saludos,\n'
+                                f'Administración - Alquileres María',
                                 settings.DEFAULT_FROM_EMAIL,
                                 [email],
                                 fail_silently=False,
@@ -252,7 +258,15 @@ def crear_empleado(request):
                 send_mail(
                     'Credenciales de acceso - Alquileres María',
                     f'Hola {nuevo_user.first_name},\n\n'
-                    f'Tu cuenta fue creada.\n\nEmail: {email}\nContraseña: {pswd}',
+                    f'¡Bienvenido/a al equipo de Alquileres María!\n\n'
+                    f'Tu cuenta fue creada exitosamente. Aquí tienes tus credenciales de acceso:\n\n'
+                    f'Email: {email}\n'
+                    f'Contraseña: {pswd}\n'
+                    f'Sucursal asignada: {sucursal}\n\n'
+                    f'Por favor, inicia sesión con estas credenciales en nuestro sistema.\n\n'
+                    f'Si tienes alguna pregunta o necesitas ayuda, no dudes en contactar con la administración.\n\n'
+                    f'Saludos cordiales,\n'
+                    f'Administración - Alquileres María',
                     settings.DEFAULT_FROM_EMAIL,
                     [email],
                     fail_silently=False,

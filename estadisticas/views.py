@@ -234,7 +234,7 @@ def obtener_ganancias_por_mes(mes):
         total = (
             Reserva.objects
             .filter(fecha_creacion__gte=inicio, fecha_creacion__lt=fin)
-            .filter(Q(estado_id=2) or Q(estado_id=4) or Q(estado_id=5))
+            .filter(Q(estado_id=2) | Q(estado_id=4) | Q(estado_id=5))
             .aggregate(total=Sum('monto_pago'))['total'] or 0)
 
         resultados[fecha] = total
@@ -254,7 +254,7 @@ def obtener_usuarios_con_mas_reservas(period):
     resultados = (
         Reserva.objects
         .filter(fecha_creacion__gte=inicio, fecha_creacion__lte=fin)
-        .filter(Q(estado_id=2) or Q(estado_id=4) or Q(estado_id=5))
+        .filter(Q(estado_id=2) | Q(estado_id=4) | Q(estado_id=5))
         .values('usuario__username')
         .annotate(total=Count('id'))
         .order_by('-total')[:10]
@@ -275,7 +275,7 @@ def obtener_autos_mas_alquilados(period):
     resultados = (
         Reserva.objects
         .filter(fecha_creacion__gte=inicio, fecha_creacion__lte=fin)
-        .filter(Q(estado_id=2) or Q(estado_id=4) or Q(estado_id=5))
+        .filter(Q(estado_id=2) | Q(estado_id=4) | Q(estado_id=5))
         .values('vehiculo__modelo')
         .annotate(total=Count('id'))
         .order_by('-total')[:10]

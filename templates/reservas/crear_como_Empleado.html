@@ -32,11 +32,6 @@
                         <li class="list-group-item info-body"><i class="fas fa-gauge me-2 iReserva"></i>{{ vehiculo.kilometraje }} km</li>
                         <li class="list-group-item info-body"><strong class="strong-body">Patente:</strong> {{ vehiculo.patente }}</li>
 
-                        <li class="list-group-item info-body" id="datosReserva" data-precio="{{ vehiculo.precio_por_dia|default:0|floatformat:2 }}">
-                            <strong class="strong-body">Total a pagar: </strong>
-                            <span id="totalAPagarTexto">0</span>
-                            <input type="hidden" name="monto_pago" id="totalAPagarInput" value="0">
-                        </li>
 
                         <li class="list-group-item info-body"><strong class="strong-body">Reembolso:</strong> {{ vehiculo.politica_reembolso }}</li>
                         <li class="list-group-item info-description"><strong>Descripción:</strong>
@@ -142,6 +137,14 @@
                                     {% for err in form.vencimiento_tarjeta.errors %}
                                         <div class="text-danger small">{{ err }}</div>
                                     {% endfor %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <li class="list-group-item info-body" id="datosReserva" data-precio="{{ vehiculo.precio_por_dia|default:0|floatformat:2 }}">
+                                      <strong class="strong-body">Total a pagar: </strong>
+                                      <span id="totalAPagarTexto">0</span>
+                                      <input type="hidden" name="monto_pago" id="totalAPagarInput" value="0">
+                                    </li>
                                 </div>
 
                             </div>
