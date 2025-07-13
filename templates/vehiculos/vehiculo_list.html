@@ -197,18 +197,18 @@
                 <div class="modal-content">
                     <div class="modal-header bg-danger text-white">
                         <h5 class="modal-title" id="eliminarModalLabel-{{ vehiculo.pk }}">
-                            <i class="fas fa-exclamation-triangle me-2"></i>Confirmar eliminación
+                            <i class="fas fa-exclamation-triangle me-2"></i>Confirmar baja
                         </h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>¿Estás seguro de que deseas eliminar el vehículo <strong>{{ vehiculo.marca }} {{ vehiculo.modelo }}</strong> con patente <strong>{{ vehiculo.patente }}</strong>?</p>
+                        <p>¿Estás seguro de que deseas dar de baja el vehículo <strong>{{ vehiculo.marca }} {{ vehiculo.modelo }}</strong> con patente <strong>{{ vehiculo.patente }}</strong>?</p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <form method="post" action="{% url 'vehiculos:vehiculo-delete' vehiculo.pk %}" style="display: inline;">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-danger">Confirmar eliminación</button>
+                            <button type="submit" class="btn btn-danger">Confirmar baja</button>
                         </form>
                     </div>
                 </div>

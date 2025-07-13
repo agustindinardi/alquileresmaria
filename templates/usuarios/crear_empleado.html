@@ -3,17 +3,7 @@
 {% block content %}
 
 <div class="container mt-5">
-    {% if titulo == "Modificar Empleado" %}
-        <h2 class="mb-4 text-light">Editar Empleado</h2>
-    {% else %}
-        <h2 class="mb-4 text-light">Registrar nuevo Empleado</h2>
-    {% endif %} 
-
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
+    <h2 class="mb-4 text-light">Registrar nuevo Empleado</h2>
 
     <form method="POST">
         {% csrf_token %}

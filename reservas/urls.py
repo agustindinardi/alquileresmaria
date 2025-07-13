@@ -9,4 +9,8 @@ urlpatterns = [
     path('crear/<int:vehiculo_id>/', views.crear_reserva, name='crear'),
     path('cancelar/<int:pk>/', views.cancelar_reserva, name='cancelar'),
     path('admin-cancelar/<int:pk>/', views.admin_cancelar_reserva, name='admin_cancelar'),
+    path('sucursal/', views.ReservaSucursalListView.as_view(), name='reservas_sucursal'),
+    path('entrega/<int:reserva_id>/', views.registrar_entrega, name='registrar_entrega'),
+    path('devolucion/<int:reserva_id>/', views.registrar_devolucion_simple, name='registrar_devolucion_simple'),
+    path('devolucion-mantenimiento/<int:reserva_id>/', views.registrar_devolucion_mantenimiento, name='registrar_devolucion_mantenimiento'),
 ]

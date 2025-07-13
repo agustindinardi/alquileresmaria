@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cambio de Vehículo - Alquileres María</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #28a745;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            background-color: #f8f9fa;
+            padding: 30px;
+            border-radius: 0 0 8px 8px;
+        }
+        .vehicle-comparison {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+        .vehicle-card {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            width: 45%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .original {
+            border-left: 4px solid #dc3545;
+        }
+        .new {
+            border-left: 4px solid #28a745;
+        }
+        .price-difference {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚗 Cambio de Vehículo en su Reserva</h1>
+        <p>Alquileres María</p>
+    </div>
+    
+    <div class="content">
+        <p>Estimado/a <strong>{{ cliente_nombre }}</strong>,</p>
+        
+        <p>Le informamos que debido a mantenimiento programado, hemos realizado un cambio en el vehículo asignado a su reserva.</p>
+        
+        <div class="vehicle-comparison">
+            <div class="vehicle-card original">
+                <h4>🔴 Vehículo Original</h4>
+                <p><strong>{{ vehiculo_original.marca }} {{ vehiculo_original.modelo }}</strong></p>
+                <p>Patente: {{ vehiculo_original.patente }}</p>
+                <p>Precio/día: ${{ vehiculo_original.precio_por_dia }}</p>
+            </div>
+            
+            <div class="vehicle-card new">
+                <h4>🟢 Nuevo Vehículo</h4>
+                <p><strong>{{ vehiculo_nuevo.marca }} {{ vehiculo_nuevo.modelo }}</strong></p>
+                <p>Patente: {{ vehiculo_nuevo.patente }}</p>
+                <p>Precio/día: ${{ vehiculo_nuevo.precio_por_dia }}</p>
+            </div>
+        </div>
+        
+        {% if diferencia_precio > 0 %}
+        <div class="price-difference">
+            <h4>💰 Beneficio para Usted</h4>
+            <p>El nuevo vehículo tiene un valor superior, pero <strong>no se cobrará diferencia adicional</strong>.</p>
+            <p>Valor adicional sin costo: <strong>${{ diferencia_precio|floatformat:2 }}</strong></p>
+        </div>
+        {% endif %}
+        
+        <h4>📅 Detalles de su Reserva:</h4>
+        <ul>
+            <li><strong>Fecha de inicio:</strong> {{ reserva.fecha_inicio|date:"d/m/Y" }}</li>
+            <li><strong>Fecha de fin:</strong> {{ reserva.fecha_fin|date:"d/m/Y" }}</li>
+            <li><strong>DNI Conductor:</strong> {{ reserva.dni_conductor }}</li>
+        </ul>
+        
+        <p><strong>¿Por qué este cambio?</strong></p>
+        <p>Realizamos mantenimientos preventivos regulares para garantizar la seguridad y comodidad de nuestros clientes. El nuevo vehículo asignado mantiene o supera las características del original.</p>
+        
+        <p>Si tiene alguna consulta, no dude en contactarnos.</p>
+        
+        <p>Gracias por confiar en Alquileres María.</p>
+    </div>
+    
+    <div class="footer">
+        <p>Alquileres María - Su confianza es nuestro compromiso</p>
+        <p>📧 alquileresmaria4@gmail.com | 📞 (011) 1234-5678</p>
+    </div>
+</body>
+</html>

@@ -19,15 +19,20 @@ class UserForm(UserCreationForm):
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
-            raise forms.ValidationError("Este correo electronico ya esta registrado.")
+        user_qs = User.objects.filter(email=email)
+
+        if user_qs.exists() and user_qs.first().is_active:
+            raise forms.ValidationError("Este correo electrónico ya está registrado por un usuario activo.")
+
         return email
+
     
     def clean_password1(self):
         password = self.cleaned_data.get('password1')
         if len(password) > 8:
             raise forms.ValidationError("La contraseña no puede tener más de 8 caracteres.")
         return password
+        
 
     def save(self, commit=True):    # De esta forma tomamos el email como username
         user = super().save(commit=False)
@@ -60,7 +65,7 @@ class PerfilForm(forms.ModelForm):
     def clean_fecha_nacimiento(self):
         fecha_nacimiento = self.cleaned_data.get('fecha_nacimiento')
         if fecha_nacimiento is None:
-            return fecha_nacimiento  # No hagas nada si está vacío, dejará que el validador por defecto actúe
+            return fecha_nacimiento  
         hoy = date.today()
         edad = hoy.year - fecha_nacimiento.year - ((hoy.month, hoy.day) < (fecha_nacimiento.month, fecha_nacimiento.day))
         if edad < 18:
@@ -168,37 +173,49 @@ class EmpleadoForm(forms.ModelForm):
             self.fields['first_name'].initial = self.instance.usuario.first_name
             self.fields['last_name'].initial = self.instance.usuario.last_name
             self.fields['email'].initial = self.instance.usuario.email
+            self.fields['email'].disabled = True 
 
     def clean_dni(self):
         dni = self.cleaned_data.get('dni')
-        
-        # Validar que solo contenga números
+
         if not dni.isdigit():
             raise forms.ValidationError("El DNI debe contener solo números.")
-        
-        # Validar que el DNI sea único (excepto para el empleado actual en edición)
-        existing_empleado = Empleado.objects.filter(dni=dni).first()
-        if existing_empleado:
-            if not self.instance or existing_empleado.pk != self.instance.pk:
-                raise forms.ValidationError("El Empleado ya se encuentra registrado.")
-        
-        # También verificar en Perfil para evitar conflictos
-        if Perfil.objects.filter(dni=dni).exists():
-            raise forms.ValidationError("Este DNI ya está registrado en el sistema.")
-        
+
+        empleado_id_actual = self.instance.pk
+
+        # Verifica si hay otro empleado activo con el mismo DNI
+        if Empleado.objects.filter(dni=dni, activo=True).exclude(pk=empleado_id_actual).exists():
+            raise forms.ValidationError("El DNI ya se encuentra registrado.")
+
+        # Verificar en Perfil solo si el perfil es de otro usuario
+        perfil_conflictivo = Perfil.objects.filter(dni=dni).first()
+        usuario_actual = getattr(self.instance, 'usuario', None)
+
+        # if perfil_conflictivo or perfil_conflictivo.usuario != usuario_actual:
+        #     raise forms.ValidationError("Este DNI ya está registrado en el sistema.")
+
         return dni
+
+
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
 
+        # Buscamos si hay un usuario con ese email
         existing_user = User.objects.filter(email=email).first()
-        
-        # Verificamos si la instancia tiene asignado un usuario antes de comparar
-        if existing_user:
-            if not self.instance.pk or not hasattr(self.instance, 'usuario') or existing_user != getattr(self.instance, 'usuario', None):
-                raise forms.ValidationError("Este correo electrónico ya está registrado.")
+
+        # Obtenemos el usuario actual asociado al empleado (si existe)
+        current_user = getattr(self.instance, 'usuario', None)
+
+        # Verificamos si el email ya está en uso por otro usuario distinto al actual
+        if existing_user and existing_user != current_user:
+            # Verificamos si ese usuario tiene un empleado activo asociado
+            empleado_relacionado = Empleado.objects.filter(usuario=existing_user, activo=True).first()
+            if empleado_relacionado:
+                raise forms.ValidationError("Este correo electrónico ya está registrado por un usuario activo.")
 
         return email
+
 
 
     def clean_fecha_nacimiento(self):
@@ -212,7 +229,7 @@ class EmpleadoForm(forms.ModelForm):
         edad = hoy.year - fecha_nacimiento.year - ((hoy.month, hoy.day) < (fecha_nacimiento.month, fecha_nacimiento.day))
         
         if edad < 18:
-            raise forms.ValidationError("El Empleado no puede registrarse ya que no cumple con el limite de edad.")
+            raise forms.ValidationError("El Empleado no cumple con el requisito de ser mayor de edad")
         
         return fecha_nacimiento
 
