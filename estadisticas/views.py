@@ -13,6 +13,7 @@ from matplotlib.ticker import MaxNLocator
 from django.shortcuts import render
 from django.db.models import Sum
 from django.db.models import Count
+from django.db.models import Q
 
 # Bloque de librerias locales
 from pagos.models import Pago
@@ -20,25 +21,13 @@ from reservas.models import Reserva
 
 def ver_estadisticas(request):
 
-    period_ganancias = request.GET.get('month-ganancias')   # period = year-month por ejemplo 2024-04
-    period_usuarios = request.GET.get('month-usuarios')
-    period_autos = request.GET.get('month-autos')
+    period_ganancias = request.GET.get('month-ganancias') or f"{datetime.now().year}-{datetime.now().month:02d}"   # period = year-month por ejemplo 2024-04
+    period_usuarios = request.GET.get('month-usuarios') or f"{datetime.now().year}-{datetime.now().month:02d}"
+    period_autos = request.GET.get('month-autos') or f"{datetime.now().year}-{datetime.now().month:02d}"
 
     print(period_ganancias)
     print(period_usuarios)
     print(period_autos)
-
-    if period_ganancias is None:
-        now = datetime.now()
-        period_ganancias = f"{now.year}-{now.month:02d}"
-
-    if period_usuarios is None:
-        now = datetime.now()
-        period_usuarios = f"{now.year}-{now.month:02d}"
-
-    if period_autos is None:
-        now = datetime.now()
-        period_autos = f"{now.year}-{now.month:02d}"
 
     grafico_ganancias = generar_reporte_ingresos(period_ganancias)
     grafico_usuarios_mas_activos = generar_reporte_usuarios_mas_activos(period_usuarios)
@@ -242,7 +231,11 @@ def obtener_ganancias_por_mes(mes):
         inicio = datetime.combine(fecha, time.min)
         fin = inicio + timedelta(days=1)
 
-        total = Reserva.objects.filter(fecha_creacion__gte=inicio, fecha_creacion__lt=fin).aggregate(total=Sum('monto_pago'))['total'] or 0
+        total = (
+            Reserva.objects
+            .filter(fecha_creacion__gte=inicio, fecha_creacion__lt=fin)
+            .filter(Q(estado_id=2) or Q(estado_id=4) or Q(estado_id=5))
+            .aggregate(total=Sum('monto_pago'))['total'] or 0)
 
         resultados[fecha] = total
 
@@ -261,6 +254,7 @@ def obtener_usuarios_con_mas_reservas(period):
     resultados = (
         Reserva.objects
         .filter(fecha_creacion__gte=inicio, fecha_creacion__lte=fin)
+        .filter(Q(estado_id=2) or Q(estado_id=4) or Q(estado_id=5))
         .values('usuario__username')
         .annotate(total=Count('id'))
         .order_by('-total')[:10]
@@ -281,6 +275,7 @@ def obtener_autos_mas_alquilados(period):
     resultados = (
         Reserva.objects
         .filter(fecha_creacion__gte=inicio, fecha_creacion__lte=fin)
+        .filter(Q(estado_id=2) or Q(estado_id=4) or Q(estado_id=5))
         .values('vehiculo__modelo')
         .annotate(total=Count('id'))
         .order_by('-total')[:10]
