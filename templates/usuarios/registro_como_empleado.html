@@ -5,7 +5,7 @@
 <div class="container mt-5">
     <h2 class="mb-4 text-light">Registrar nuevo Cliente</h2>
 
-   <form method="POST">
+   <form method="POST" id="clientForm">
         {% csrf_token %}
 
         <div class="mb-3">
@@ -62,9 +62,75 @@
             
         </div>
 
-        <button type="submit" class="btn btn-success">Registrar Cliente</button>
+        <button type="submit" id="submitBtn" class="btn btn-secondary" disabled>Registrar Cliente</button>
         <a href="{% url 'home' %}" class="btn btn-secondary">Volver</a>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('clientForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Obtener todos los campos del formulario
+    const requiredFields = [
+        'id_first_name',
+        'id_last_name', 
+        'id_email',
+        'id_dni',
+        'id_fecha_nacimiento',
+        'id_telefono'
+    ];
+    
+    function validateForm() {
+        let allFieldsFilled = true;
+        
+        // Verificar que todos los campos estén llenos
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field && field.value.trim() === '') {
+                allFieldsFilled = false;
+            }
+        });
+        
+        // Cambiar el estado del botón según la validación
+        if (allFieldsFilled) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('btn-secondary');
+            submitBtn.classList.add('btn-success');
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.classList.remove('btn-success');
+            submitBtn.classList.add('btn-secondary');
+        }
+    }
+    
+    // Agregar event listeners a todos los campos
+    requiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', validateForm);
+            field.addEventListener('change', validateForm);
+        }
+    });
+    
+    // Validar el formulario al cargar la página
+    validateForm();
+});
+</script>
+
+<style>
+/* Estilo personalizado para el botón deshabilitado */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Efecto hover para el botón habilitado */
+.btn-success:not(:disabled):hover {
+    background-color: #198754;
+    border-color: #198754;
+}
+</style>
 
 {% endblock %}

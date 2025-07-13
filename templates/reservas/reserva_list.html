@@ -45,7 +45,7 @@
                                 </ul>
                                 <div class="d-grid gap-2">
                                     <a href="{% url 'vehiculos:vehiculo-detail' reserva.vehiculo.pk %}" class="btn btn-primary">Ver detalles</a>
-                                    {% if not reserva.motivo_cancelacion %}
+                                    {% if not reserva.motivo_cancelacion and reserva.estado.id != 1 and reserva.estado.id != 3 and reserva.estado.id != 4 and reserva.estado.id != 5 %}
                                     <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#eliminarModal-{{ reserva.pk }}">
                                         <i class="fas fa-trash-alt"></i> Cancelar Reserva
                                     </button>
