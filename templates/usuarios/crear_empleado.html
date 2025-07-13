@@ -3,12 +3,12 @@
 {% block content %}
 
 <div class="container mt-5">
-    <h2 class="mb-4">Registrar nuevo Empleado</h2>
+    <h2 class="mb-4 text-light">Registrar nuevo Empleado</h2>
 
     <form method="POST">
         {% csrf_token %}
         {{ form.as_p }}
-
+        
         <button type="submit" class="btn btn-primary">
             {% if titulo == "Modificar Empleado" %}
                 Actualizar Empleado

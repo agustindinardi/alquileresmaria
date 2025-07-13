@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cancelación de Reserva por Mantenimiento - Alquileres María</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #dc3545;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            background-color: #f8f9fa;
+            padding: 30px;
+            border-radius: 0 0 8px 8px;
+        }
+        .vehicle-info {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #dc3545;
+        }
+        .reservation-details {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .refund-info {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            color: #6c757d;
+        }
+        .amount {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Cancelación de Reserva</h1>
+        <p>Alquileres María</p>
+    </div>
+    
+    <div class="content">
+        <p>Estimado/a <strong>{{ cliente_nombre }}</strong>,</p>
+        
+        <p>Le informamos que debemos cancelar su reserva debido a un mantenimiento programado del vehículo asignado.</p>
+        
+        <p>Hemos intentado reasignar su reserva a un vehículo alternativo, pero no contamos con disponibilidad en las fechas solicitadas.</p>
+        
+        <div class="vehicle-info">
+            <h4>Vehículo Afectado</h4>
+            <p><strong>{{ vehiculo_original.marca }} {{ vehiculo_original.modelo }}</strong></p>
+            <p><strong>Patente:</strong> {{ vehiculo_original.patente }}</p>
+        </div>
+        
+        <div class="reservation-details">
+            <h4>Detalles de la Reserva Cancelada</h4>
+            <ul>
+                <li><strong>Fecha de inicio:</strong> {{ reserva.fecha_inicio|date:"d/m/Y" }}</li>
+                <li><strong>Fecha de fin:</strong> {{ reserva.fecha_fin|date:"d/m/Y" }}</li>
+                <li><strong>DNI Conductor:</strong> {{ reserva.dni_conductor }}</li>
+            </ul>
+        </div>
+        
+        <div class="refund-info">
+            <h4>Reembolso</h4>
+            <p>Se ha procesado el reembolso completo de su reserva:</p>
+            <p class="amount">${{ monto_reembolso|floatformat:2 }}</p>
+            <p>El dinero se ha acreditado en su tarjeta terminada en <strong>{{ reserva.tarjeta.numero|slice:"-4:" }}</strong></p>
+        </div>
+        
+        <p>Lamentamos los inconvenientes que esta cancelación pueda ocasionarle. El mantenimiento es necesario para garantizar la seguridad de nuestros vehículos.</p>
+        
+        <p>Si desea realizar una nueva reserva o tiene alguna consulta, puede contactarnos.</p>
+        
+        <p>Gracias por su comprensión.</p>
+        
+        <p>Atentamente,<br>
+        Equipo de Alquileres María</p>
+    </div>
+    
+    <div class="footer">
+        <p>Alquileres María</p>
+        <p>alquileresmaria4@gmail.com | (011) 1234-5678</p>
+        <p><small>Reserva #{{ reserva.id }}</small></p>
+    </div>
+</body>
+</html>

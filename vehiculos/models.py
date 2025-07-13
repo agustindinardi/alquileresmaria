@@ -105,7 +105,7 @@ class Vehiculo(models.Model):
 
     def reservar(self):
         if self.disponible():
-            return self.cambiar_estado("reservado")
+            return self.cambiar_estado("disponible")
         return False
 
     def liberar(self):

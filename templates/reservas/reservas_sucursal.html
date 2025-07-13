@@ -1,0 +1,725 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reservas de Sucursal - Alquileres María{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .reserva-card {
+        border-left: 4px solid #007bff;
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    
+    .reserva-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .reserva-card.confirmada {
+        border-left-color: #ffc107;
+    }
+    
+    .reserva-card.activa {
+        border-left-color: #28a745;
+    }
+    
+    .reserva-card.tardia {
+        border-left-color: #dc3545;
+        background-color: #fff5f5;
+    }
+    
+    .estado-badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+    }
+    
+    .vehiculo-info {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    
+    .cliente-info {
+        background-color: #e3f2fd;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    
+    .fecha-info {
+        background-color: #fff3e0;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    
+    .acciones-info {
+        background-color: #f0f8ff;
+        border-radius: 8px;
+        padding: 1rem;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    .btn-entrega {
+        background-color: #28a745;
+        border-color: #28a745;
+        color: white;
+    }
+    
+    .btn-entrega:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+        color: white;
+    }
+    
+    .btn-devolucion {
+        background-color: #ffc107;
+        border-color: #ffc107;
+        color: #212529;
+    }
+    
+    .btn-devolucion:hover {
+        background-color: #e0a800;
+        border-color: #d39e00;
+        color: #212529;
+    }
+    
+    .entrega-card {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+    
+    .devolucion-card {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+        color: #212529;
+    }
+    
+    .tardias-card {
+        background: linear-gradient(135deg, #dc3545, #e74c3c);
+        color: white;
+    }
+    
+    .penalizacion-info {
+        background-color: #fff2f2;
+        border: 1px solid #ffcccb;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+    }
+    
+    .section-divider {
+        border-top: 3px solid #dee2e6;
+        margin: 2rem 0;
+        padding-top: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-light">
+                        <i class="fas fa-calendar-check me-2"></i>
+                        Reservas de Sucursal - Panel de Control
+                    </h1><br>
+                    <p class="mb-0" style="color: #d0d0d0;">
+                        {% if sucursal_empleado %}
+                            {{ sucursal_empleado }} - {{ fecha_hoy|date:"d/m/Y" }}
+                        {% else %}
+                            Fecha: {{ fecha_hoy|date:"d/m/Y" }}
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <button class="btn btn-outline-primary" onclick="location.reload()">
+                        <i class="fas fa-sync-alt me-1"></i>
+                        Actualizar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">{{ total_reservas }}</h4>
+                        <small>Acciones Hoy</small>
+                    </div>
+                    <i class="fas fa-tasks fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card entrega-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">{{ entregas_hoy }}</h4>
+                        <small>Entregas Hoy</small>
+                    </div>
+                    <i class="fas fa-arrow-right fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card devolucion-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">{{ devoluciones_hoy }}</h4>
+                        <small>Devoluciones Hoy</small>
+                    </div>
+                    <i class="fas fa-arrow-left fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">{{ reservas_activas_total }}</h4>
+                        <small>Total Activas</small>
+                    </div>
+                    <i class="fas fa-play fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card tardias-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">{{ total_tardias }}</h4>
+                        <small>Tardías</small>
+                    </div>
+                    <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">{{ reservas_confirmadas_total }}</h4>
+                        <small>Confirmadas</small>
+                    </div>
+                    <i class="fas fa-clock fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN: ACCIONES DE HOY -->
+    <div class="row">
+        <div class="col-12">
+            <h2 class="h4 mb-3 text-light">
+                <i class="fas fa-calendar-day me-2 text-primary"></i>
+                Acciones Programadas para Hoy
+            </h2>
+            
+            {% if reservas %}
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>
+                            Reservas que Requieren Acción Hoy
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        {% for reserva in reservas %}
+                            <div class="reserva-card card m-3 {{ reserva.estado.nombre|lower }}">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <!-- Información del Vehículo -->
+                                        <div class="col-md-3">
+                                            <div class="vehiculo-info">
+                                                <h6 class="fw-bold mb-2">
+                                                    <i class="fas fa-car me-1"></i>
+                                                    Vehículo
+                                                </h6>
+                                                <p class="mb-1">
+                                                    <strong>{{ reserva.vehiculo.marca }} {{ reserva.vehiculo.modelo }}</strong>
+                                                </p>
+                                                <p class="mb-1">
+                                                    <small class="text-muted">Patente:</small> 
+                                                    <span class="badge bg-secondary">{{ reserva.vehiculo.patente }}</span>
+                                                </p>
+                                                <p class="mb-0">
+                                                    <small class="text-muted">Capacidad:</small> 
+                                                    {{ reserva.vehiculo.capacidad }} pasajeros
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Información del Cliente -->
+                                        <div class="col-md-3">
+                                            <div class="cliente-info">
+                                                <h6 class="fw-bold mb-2">
+                                                    <i class="fas fa-user me-1"></i>
+                                                    Cliente
+                                                </h6>
+                                                <p class="mb-1">
+                                                    <strong>{{ reserva.usuario.first_name }} {{ reserva.usuario.last_name }}</strong>
+                                                </p>
+                                                <p class="mb-1">
+                                                    <small class="text-muted">Email:</small> 
+                                                    {{ reserva.usuario.email }}
+                                                </p>
+                                                <p class="mb-0">
+                                                    <small class="text-muted">DNI Conductor:</small> 
+                                                    {{ reserva.dni_conductor }}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Información de Fechas y Estado -->
+                                        <div class="col-md-3">
+                                            <div class="fecha-info">
+                                                <h6 class="fw-bold mb-2">
+                                                    <i class="fas fa-calendar me-1"></i>
+                                                    Período
+                                                </h6>
+                                                <p class="mb-1">
+                                                    <small class="text-muted">Inicio:</small> 
+                                                    <strong>{{ reserva.fecha_inicio|date:"d/m/Y" }}</strong>
+                                                    {% if reserva.fecha_inicio == fecha_hoy %}
+                                                        <span class="badge bg-success ms-1">HOY</span>
+                                                    {% endif %}
+                                                </p>
+                                                <p class="mb-2">
+                                                    <small class="text-muted">Fin:</small> 
+                                                    <strong>{{ reserva.fecha_fin|date:"d/m/Y" }}</strong>
+                                                    {% if reserva.fecha_fin == fecha_hoy %}
+                                                        <span class="badge bg-warning ms-1">HOY</span>
+                                                    {% endif %}
+                                                </p>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    {% if reserva.estado.nombre == 'Confirmada' %}
+                                                        <span class="estado-badge bg-warning text-dark">
+                                                            <i class="fas fa-clock me-1"></i>{{ reserva.estado.nombre }}
+                                                        </span>
+                                                    {% elif reserva.estado.nombre == 'Activa' %}
+                                                        <span class="estado-badge bg-success text-white">
+                                                            <i class="fas fa-play me-1"></i>{{ reserva.estado.nombre }}
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="estado-badge bg-primary text-white">
+                                                            {{ reserva.estado.nombre }}
+                                                        </span>
+                                                    {% endif %}
+                                                    <small class="text-muted">
+                                                        ${{ reserva.calcular_Total|floatformat:2 }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Acciones -->
+                                        <div class="col-md-3">
+                                            <div class="acciones-info">
+                                                <h6 class="fw-bold mb-2">
+                                                    <i class="fas fa-cogs me-1"></i>
+                                                    Acción Requerida
+                                                </h6>
+                                                
+                                                {% if reserva.estado.nombre == 'Confirmada' and reserva.fecha_inicio == fecha_hoy %}
+                                                    <div class="d-grid gap-2">
+                                                        <a href="{% url 'reservas:registrar_entrega' reserva.id %}" 
+                                                           class="btn btn-entrega btn-sm">
+                                                            <i class="fas fa-arrow-right me-1"></i>
+                                                            Registrar Entrega
+                                                        </a>
+                                                    </div>
+                                                    <small class="text-success d-block mt-1">
+                                                        <i class="fas fa-calendar-check me-1"></i>
+                                                        Entrega programada para hoy
+                                                    </small>
+                                                {% elif reserva.estado.nombre == 'Activa' and reserva.fecha_fin == fecha_hoy %}
+                                                    <div class="d-grid gap-2">
+                                                        <a href="{% url 'reservas:registrar_devolucion_simple' reserva.id %}" 
+                                                           class="btn btn-success btn-sm mb-1">
+                                                            <i class="fas fa-check me-1"></i>
+                                                            Devolver Sin Mantenimiento
+                                                        </a>
+                                                        <a href="{% url 'reservas:registrar_devolucion_mantenimiento' reserva.id %}" 
+                                                           class="btn btn-warning btn-sm">
+                                                            <i class="fas fa-tools me-1"></i>
+                                                            Devolver Con Mantenimiento
+                                                        </a>
+                                                    </div>
+                                                    <small class="text-warning d-block mt-2">
+                                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                                        Devolución programada para hoy
+                                                    </small>
+                                                    <small class="text-info d-block mt-1">
+                                                        <i class="fas fa-info-circle me-1"></i>
+                                                        Con mantenimiento: 3 días, reasigna reservas automáticamente
+                                                    </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Información adicional -->
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    {% if reserva.estado.nombre == 'Confirmada' %}
+                                                        <span class="badge bg-info me-1">
+                                                            <i class="fas fa-handshake me-1"></i>
+                                                            Pendiente de Entrega
+                                                        </span>
+                                                    {% elif reserva.estado.nombre == 'Activa' %}
+                                                        <span class="badge bg-warning me-1">
+                                                            <i class="fas fa-undo me-1"></i>
+                                                            Pendiente de Devolución
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+                                                <small class="text-muted">
+                                                    Creada: {{ reserva.fecha_creacion|date:"d/m/Y H:i" }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <!-- Estado vacío para acciones de hoy -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-check"></i>
+                            <h4>No hay acciones pendientes para hoy</h4>
+                            <p class="text-muted">
+                                No hay entregas ni devoluciones programadas para el día de hoy.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- SECCIÓN: RESERVAS TARDÍAS -->
+    {% if total_tardias > 0 %}
+    <div class="section-divider">
+        <div class="row">
+            <div class="col-12">
+                <h2 class="h4 mb-3">
+                    <i class="fas fa-exclamation-triangle me-2 text-danger"></i>
+                    Reservas Tardías - Requieren Atención Inmediata
+                    <span class="badge bg-danger ms-2">{{ total_tardias }}</span>
+                </h2>
+                
+                <!-- Entregas Tardías -->
+                {% if entregas_tardias %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-arrow-right me-2"></i>
+                                Entregas Tardías ({{ entregas_tardias|length }})
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            {% for reserva in entregas_tardias %}
+                                <div class="reserva-card card m-3 tardia">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <!-- Información del Vehículo -->
+                                            <div class="col-md-3">
+                                                <div class="vehiculo-info">
+                                                    <h6 class="fw-bold mb-2">
+                                                        <i class="fas fa-car me-1"></i>
+                                                        Vehículo
+                                                    </h6>
+                                                    <p class="mb-1">
+                                                        <strong>{{ reserva.vehiculo.marca }} {{ reserva.vehiculo.modelo }}</strong>
+                                                    </p>
+                                                    <p class="mb-1">
+                                                        <small class="text-muted">Patente:</small> 
+                                                        <span class="badge bg-secondary">{{ reserva.vehiculo.patente }}</span>
+                                                    </p>
+                                                    <p class="mb-0">
+                                                        <small class="text-muted">Precio/día:</small> 
+                                                        ${{ reserva.vehiculo.precio_por_dia|floatformat:2 }}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <!-- Información del Cliente -->
+                                            <div class="col-md-3">
+                                                <div class="cliente-info">
+                                                    <h6 class="fw-bold mb-2">
+                                                        <i class="fas fa-user me-1"></i>
+                                                        Cliente
+                                                    </h6>
+                                                    <p class="mb-1">
+                                                        <strong>{{ reserva.usuario.first_name }} {{ reserva.usuario.last_name }}</strong>
+                                                    </p>
+                                                    <p class="mb-1">
+                                                        <small class="text-muted">Email:</small> 
+                                                        {{ reserva.usuario.email }}
+                                                    </p>
+                                                    <p class="mb-0">
+                                                        <small class="text-muted">DNI:</small> 
+                                                        {{ reserva.dni_conductor }}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <!-- Información de Fechas -->
+                                            <div class="col-md-3">
+                                                <div class="fecha-info">
+                                                    <h6 class="fw-bold mb-2">
+                                                        <i class="fas fa-calendar-times me-1 text-danger"></i>
+                                                        Fechas
+                                                    </h6>
+                                                    <p class="mb-1">
+                                                        <small class="text-muted">Debía iniciar:</small> 
+                                                        <strong class="text-danger">{{ reserva.fecha_inicio|date:"d/m/Y" }}</strong>
+                                                    </p>
+                                                    <p class="mb-2">
+                                                        <small class="text-muted">Fin programado:</small> 
+                                                        <strong>{{ reserva.fecha_fin|date:"d/m/Y" }}</strong>
+                                                    </p>
+                                                    <div class="alert alert-danger py-1 px-2 mb-0">
+                                                        <small>
+                                                            <i class="fas fa-clock me-1"></i>
+                                                            Retraso: {{ fecha_hoy|timeuntil:reserva.fecha_inicio|slice:"-5" }} día(s)
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Acciones -->
+                                            <div class="col-md-3">
+                                                <div class="acciones-info">
+                                                    <h6 class="fw-bold mb-2">
+                                                        <i class="fas fa-exclamation-circle me-1"></i>
+                                                        Acción Urgente
+                                                    </h6>
+                                                    
+                                                    <div class="d-grid gap-2">
+                                                        <a href="{% url 'reservas:registrar_entrega' reserva.id %}" 
+                                                           class="btn btn-danger btn-sm">
+                                                            <i class="fas fa-arrow-right me-1"></i>
+                                                            Registrar Entrega Tardía
+                                                        </a>
+                                                    </div>
+                                                    <small class="text-danger d-block mt-1">
+                                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                                        Entrega fuera de plazo
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Devoluciones Tardías -->
+                {% if devoluciones_tardias %}
+                    <div class="card">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Devoluciones Tardías con Penalización ({{ devoluciones_tardias|length }})
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            {% for reserva in devoluciones_tardias %}
+                                <div class="reserva-card card m-3 tardia">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <!-- Información del Vehículo -->
+                                            <div class="col-md-3">
+                                                <div class="vehiculo-info">
+                                                    <h6 class="fw-bold mb-2">
+                                                        <i class="fas fa-car me-1"></i>
+                                                        Vehículo
+                                                    </h6>
+                                                    <p class="mb-1">
+                                                        <strong>{{ reserva.vehiculo.marca }} {{ reserva.vehiculo.modelo }}</strong>
+                                                    </p>
+                                                    <p class="mb-1">
+                                                        <small class="text-muted">Patente:</small> 
+                                                        <span class="badge bg-secondary">{{ reserva.vehiculo.patente }}</span>
+                                                    </p>
+                                                    <p class="mb-0">
+                                                        <small class="text-muted">Precio/día:</small> 
+                                                        ${{ reserva.vehiculo.precio_por_dia|floatformat:2 }}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <!-- Información del Cliente -->
+                                            <div class="col-md-2">
+                                                <div class="cliente-info">
+                                                    <h6 class="fw-bold mb-2">
+                                                        <i class="fas fa-user me-1"></i>
+                                                        Cliente
+                                                    </h6>
+                                                    <p class="mb-1">
+                                                        <strong>{{ reserva.usuario.first_name }} {{ reserva.usuario.last_name }}</strong>
+                                                    </p>
+                                                    <p class="mb-0">
+                                                        <small class="text-muted">Email:</small> 
+                                                        {{ reserva.usuario.email }}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <!-- Información de Fechas y Penalización -->
+                                            <div class="col-md-4">
+                                                <div class="fecha-info">
+                                                    <h6 class="fw-bold mb-2">
+                                                        <i class="fas fa-calendar-times me-1 text-danger"></i>
+                                                        Fechas y Penalización
+                                                    </h6>
+                                                    <p class="mb-1">
+                                                        <small class="text-muted">Debía finalizar:</small> 
+                                                        <strong class="text-danger">{{ reserva.fecha_fin|date:"d/m/Y" }}</strong>
+                                                    </p>
+                                                    <p class="mb-2">
+                                                        <small class="text-muted">Total original:</small> 
+                                                        <strong>${{ reserva.calcular_Total|floatformat:2 }}</strong>
+                                                    </p>
+                                                    
+                                                    <div class="penalizacion-info">
+                                                        <div class="row">
+                                                            <div class="col-6">
+                                                                <small class="text-danger fw-bold">Días de demora:</small>
+                                                                <p class="mb-1 text-danger fw-bold">{{ reserva.dias_demora }}</p>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <small class="text-danger fw-bold">Penalización:</small>
+                                                                <p class="mb-1 text-danger fw-bold">${{ reserva.penalizacion|floatformat:2 }}</p>
+                                                            </div>
+                                                        </div>
+                                                        <hr class="my-2">
+                                                        <div class="text-center">
+                                                            <small class="text-muted">Total con penalización:</small>
+                                                            <h6 class="text-danger fw-bold mb-0">${{ reserva.total_con_penalizacion|floatformat:2 }}</h6>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Acciones -->
+                                            <div class="col-md-3">
+                                                <div class="acciones-info">
+                                                    <h6 class="fw-bold mb-2">
+                                                        <i class="fas fa-money-bill-wave me-1"></i>
+                                                        Devolución con Penalización
+                                                    </h6>
+                                                    
+                                                    <div class="d-grid gap-2">
+                                                        <a href="{% url 'reservas:registrar_devolucion_simple' reserva.id %}" 
+                                                           class="btn btn-warning btn-sm mb-1">
+                                                            <i class="fas fa-check me-1"></i>
+                                                            Devolver Sin Mantenimiento
+                                                        </a>
+                                                        <a href="{% url 'reservas:registrar_devolucion_mantenimiento' reserva.id %}" 
+                                                           class="btn btn-danger btn-sm">
+                                                            <i class="fas fa-tools me-1"></i>
+                                                            Devolver Con Mantenimiento
+                                                        </a>
+                                                    </div>
+                                                    <small class="text-warning d-block mt-2">
+                                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                                        Se cobrará penalización automáticamente
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Paginación -->
+    {% if is_paginated %}
+        <nav aria-label="Navegación de reservas" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">Primera</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                    </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">
+                        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh cada 5 minutos
+    setTimeout(function() {
+        location.reload();
+    }, 300000); // 5 minutos
+
+    // Mostrar tooltip en badges
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+</script>
+{% endblock %}

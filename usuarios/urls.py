@@ -10,6 +10,7 @@ urlpatterns = [
     path('perfil/', views.perfil, name='perfil'),
     path('recuperar-contrasena/', views.recuperar_contrasena, name='recuperar_contrasena'),
     path('validar-codigo/', views.validar_codigo, name='validar_codigo'),
+    path('registro/empleado/', views.registro_como_empleado, name='registro_como_empleado'),
     
     # URLs para empleados (solo administradores)
     path('empleados/', views.lista_empleados, name='lista_empleados'),

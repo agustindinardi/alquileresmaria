@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout, get_user_model
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .forms import EmailLoginForm, CodigoValidacionForm, EmpleadoForm
+from .forms import EmailLoginForm, CodigoValidacionForm, EmpleadoForm, ClientePorEmpleadoForm
 from .forms import UserForm, PerfilForm, RecuperarContrasenaForm
 from .models import Empleado
 from django.contrib.auth.views import LoginView, LogoutView
@@ -45,6 +45,9 @@ def es_administrador(user):
 def administrador_requerido(user):
     """Decorador para verificar si el usuario es administrador"""
     return es_administrador(user)
+
+def es_empleado(user):
+    return hasattr(user, 'empleado')
 
 def generar_contrasena_empleado():
     """Genera una contraseña aleatoria de 6 caracteres para empleados"""
@@ -329,6 +332,51 @@ def eliminar_empleado(request, empleado_id):
     return render(request, 'usuarios/confirmar_eliminar.html', {
         'empleado': empleado
     })
+
+
+#Registro de un cliente como un Empleado
+
+
+@login_required
+@user_passes_test(es_empleado)
+def registro_como_empleado(request):
+    if request.method == 'POST':
+        form = ClientePorEmpleadoForm(request.POST)
+        if form.is_valid():
+            pswd = get_random_string(length=6)
+            email = form.cleaned_data['email']
+
+            user = User.objects.create_user(
+                username= email,
+                email= email,
+                first_name= form.cleaned_data['first_name'],
+                last_name= form.cleaned_data['last_name'],
+                password= pswd
+            )
+
+            # Crear el perfil asociado
+            perfil = form.save(commit=False)
+            perfil.usuario = user
+            perfil.save()
+
+            # Enviar correo con contraseña (opcional)
+            send_mail(
+                'Tu cuenta en Alquileres María',
+                f'Hola {user.first_name}, tu cuenta ha sido registrada con éxito.\nTu contraseña temporal es: {pswd}',
+                'no-responder@alquileresmaria.com',
+                [user.email],
+                fail_silently=True
+            )
+
+            messages.success(request, f"Cliente registrado correctamente. Contraseña enviada a {user.email}")
+            return redirect('usuarios:registro_como_empleado')
+    else:
+        form = ClientePorEmpleadoForm()
+
+    return render(request, 'usuarios/registro_como_empleado.html', {
+        'form': form
+    })
+
 
 #Vista para recuperar contraseña
 User = get_user_model()
