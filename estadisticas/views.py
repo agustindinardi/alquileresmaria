@@ -20,14 +20,29 @@ from reservas.models import Reserva
 
 def ver_estadisticas(request):
 
-    period = request.GET.get('month')   # period = year-month por ejemplo 2024-04
-    if period is None:
+    period_ganancias = request.GET.get('month-ganancias')   # period = year-month por ejemplo 2024-04
+    period_usuarios = request.GET.get('month-usuarios')
+    period_autos = request.GET.get('month-autos')
+
+    print(period_ganancias)
+    print(period_usuarios)
+    print(period_autos)
+
+    if period_ganancias is None:
         now = datetime.now()
-        period = f"{now.year}-{now.month:02d}"
-    
-    grafico_ganancias = generar_reporte_ingresos(period)
-    grafico_usuarios_mas_activos = generar_reporte_usuarios_mas_activos()
-    grafico_autos_mas_alquilados = generar_reporte_autos_mas_alquilados()
+        period_ganancias = f"{now.year}-{now.month:02d}"
+
+    if period_usuarios is None:
+        now = datetime.now()
+        period_usuarios = f"{now.year}-{now.month:02d}"
+
+    if period_autos is None:
+        now = datetime.now()
+        period_autos = f"{now.year}-{now.month:02d}"
+
+    grafico_ganancias = generar_reporte_ingresos(period_ganancias)
+    grafico_usuarios_mas_activos = generar_reporte_usuarios_mas_activos(period_usuarios)
+    grafico_autos_mas_alquilados = generar_reporte_autos_mas_alquilados(period_autos)
     return render(request,
                   'estadisticas/estadisticas_list.html',
                   {'grafico_ganancias': grafico_ganancias, 'grafico_usuarios': grafico_usuarios_mas_activos, 'grafico_vehiculos':grafico_autos_mas_alquilados}
@@ -53,27 +68,33 @@ def generar_reporte_ingresos(period):
             "Fecha"
         )
 
-def generar_reporte_usuarios_mas_activos():
-    usuarios, cantidades = obtener_usuarios_con_mas_reservas()
+def generar_reporte_usuarios_mas_activos(period):
+    usuarios, cantidades = obtener_usuarios_con_mas_reservas(period)
 
-    return generar_grafico_barras(
-        usuarios,
-        cantidades,
-        "Usuarios con más reservas",
-        "Cantidad de reservas",
-        "Usuario"
-    )
+    if (all(cantidades == 0 for cantidades in cantidades)):
+        return generar_grafico_vacio()
+    else:
+        return generar_grafico_barras(
+            usuarios,
+            cantidades,
+            "Usuarios con más reservas",
+            "Cantidad de reservas",
+            "Usuario"
+        )
 
-def generar_reporte_autos_mas_alquilados():
-    autos, cantidades = obtener_autos_mas_alquilados()
+def generar_reporte_autos_mas_alquilados(period):
+    autos, cantidades = obtener_autos_mas_alquilados(period)
 
-    return generar_grafico_barras(
-        autos,
-        cantidades,
-        "Vehiculos mas alquilados",
-        "Cantidad de alquileres",
-        "Modelo del vehiculo"
-    )
+    if (all(cantidades == 0 for cantidades in cantidades)):
+        return generar_grafico_vacio()
+    else:
+        return generar_grafico_barras(
+            autos,
+            cantidades,
+            "Vehiculos mas alquilados",
+            "Cantidad de alquileres",
+            "Modelo del vehiculo"
+        )
 
 def generar_grafico_barras(categorias, valores, titulo_grafico, titulo_eje_y, titulo_eje_x):
     """Genera un grafico del tipo grafico de barras
@@ -230,11 +251,19 @@ def obtener_ganancias_por_mes(mes):
     return resultados
 
 
-def obtener_usuarios_con_mas_reservas(top_n=10):
+def obtener_usuarios_con_mas_reservas(period):
+    año, mes = map(int, period.split("-"))
+    _, cantidad_dias = calendar.monthrange(año, mes)
+
+    inicio = datetime(año, mes, 1)
+    fin = datetime(año, mes, cantidad_dias, 23, 59, 59)
+
     resultados = (
-        Reserva.objects.values('usuario__username')
+        Reserva.objects
+        .filter(fecha_creacion__gte=inicio, fecha_creacion__lte=fin)
+        .values('usuario__username')
         .annotate(total=Count('id'))
-        .order_by('-total')[:top_n]
+        .order_by('-total')[:10]
     )
 
     usuarios = [r['usuario__username'] for r in resultados]
@@ -242,11 +271,19 @@ def obtener_usuarios_con_mas_reservas(top_n=10):
 
     return usuarios, cantidades
 
-def obtener_autos_mas_alquilados(top_n=10):
+def obtener_autos_mas_alquilados(period):
+    año, mes = map(int, period.split("-"))
+    _, cantidad_dias = calendar.monthrange(año, mes)
+
+    inicio = datetime(año, mes, 1)
+    fin = datetime(año, mes, cantidad_dias, 23, 59, 59)
+
     resultados = (
-        Reserva.objects.values('vehiculo__modelo')
+        Reserva.objects
+        .filter(fecha_creacion__gte=inicio, fecha_creacion__lte=fin)
+        .values('vehiculo__modelo')
         .annotate(total=Count('id'))
-        .order_by('-total')[:top_n]
+        .order_by('-total')[:10]
     )
 
     modelos = [r['vehiculo__modelo'] for r in resultados]
