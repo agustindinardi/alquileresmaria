@@ -379,7 +379,8 @@ class VehiculoDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         vehiculo = self.get_object()
 
         # Verificar si el vehículo está reservado
-        if Reserva.objects.filter(vehiculo=vehiculo, motivo_cancelacion__isnull=True).exists():
+        ids_estados_no_permitidos = [2, 4] 
+        if Reserva.objects.filter(vehiculo=vehiculo,estado_id__in=ids_estados_no_permitidos).exists():
             messages.error(
                 request, 
                 f'No se puede dar de baja el vehículo {vehiculo.marca} {vehiculo.modelo} '

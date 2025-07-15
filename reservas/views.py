@@ -173,7 +173,7 @@ def crear_reserva_Emple(request, vehiculo_id):
                         return redirect('home')
             except Exception as e:
                 messages.error(request, f"Error al crear la reserva: {str(e)}")
-                return redirect('vehiculos:detalle', vehiculo_id)
+                #return redirect('vehiculos:detalle', vehiculo_id)
     else:
         form = ReservaEmpleadoForm(vehiculo=vehiculo, usuario=request.user)
 
@@ -529,7 +529,7 @@ def registrar_devolucion_simple(request, reserva_id):
                 else:
                     messages.warning(
                         request, 
-                        f"Devolución TARDÍA registrada pero saldo insuficiente para penalización. Retraso: {dias_demora} día(s). Penalización pendiente: ${penalizacion:.2f}"
+                        f"Saldo insuficiente para penalización. Penalización pendiente: ${penalizacion:.2f}"
                     )
             else:
                 messages.success(

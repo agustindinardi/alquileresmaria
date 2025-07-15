@@ -73,7 +73,7 @@ class ReservaForm(forms.ModelForm):
             from .models import Reserva
             reservas_existentes = Reserva.objects.filter(
                 vehiculo=self.vehiculo,
-                estado__nombre__in=['Confirmada'],
+                estado__nombre__in=['Confirmada', 'Activa'],
             )
             
             for reserva in reservas_existentes:
@@ -199,7 +199,7 @@ class ReservaEmpleadoForm(forms.ModelForm):
         return username  # mantener el email como cleaned_data, pero guardamos el usuario real aparte
 
     def clean_fecha_inicio(self):
-        return timezone.now().date()
+        return localtime().date()
 
     def clean(self):
         cleaned_data = super().clean()

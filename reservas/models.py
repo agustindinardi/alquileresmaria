@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from vehiculos.models import Vehiculo
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.utils.timezone import localtime
 
 class EstadoReserva(models.Model):
     nombre = models.CharField(max_length=50)
@@ -75,7 +76,7 @@ class Reserva(models.Model):
             raise ValidationError("Ambas fechas deben estar completas.")
         
         # Validar que la fecha de inicio sea posterior a la fecha actual
-        if self.fecha_inicio < timezone.now().date():
+        if self.fecha_inicio < localtime().date():
             raise ValidationError("La fecha de inicio debe ser posterior a la fecha actual.")
         
         # Validar que la fecha de fin sea posterior a la fecha de inicio
@@ -90,7 +91,7 @@ class Reserva(models.Model):
         if hasattr(self, 'vehiculo') and self.vehiculo:
             reservas_existentes = Reserva.objects.filter(
                 vehiculo=self.vehiculo,
-                estado__nombre__in=['Confirmada'],
+                estado__nombre__in=['Confirmada', 'Activa'],
             ).exclude(id=self.id)
             
             for reserva in reservas_existentes:
@@ -101,7 +102,7 @@ class Reserva(models.Model):
         if hasattr(self, 'dni_conductor') and self.dni_conductor:
             reservas_dni = Reserva.objects.filter(
                 dni_conductor=self.dni_conductor,
-                estado__nombre='Confirmada' and 'Activa'
+                estado__nombre='Confirmada' or 'Activa'
             ).exclude(id=self.id)  # Excluir la reserva actual (para ediciones)
             
             for reserva in reservas_dni:
